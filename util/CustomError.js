@@ -10,6 +10,8 @@ let make = (status,code,message)=>{
 
 let CODES = {
     VALIDATION_FAILED:"VALIDATION_FAILED",
+    NOT_FOUND:"NOT_FOUND",
+    SERVER_ERROR:"SERVER_ERROR",
 
 };
 
