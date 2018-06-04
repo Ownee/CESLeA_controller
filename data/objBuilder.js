@@ -1,24 +1,22 @@
-class obj {
-    constructor(objId, obj, place, createdAt) {
-        self.objId = objId;
-        self.obj = obj;
-        self.place = place;
-        self.createdAt = createdAt;
+class ObjData {
+    constructor(objId, _obj, place, createdAt) {
+        this.objId = objId;
+        this.obj = _obj;
+        this.place = place;
+        this.createdAt = createdAt;
 
     }
 
     toString() {
-        console.log(self);
+        console.log(this);
     }
 }
 
-let build = (objId,obj,place,createdAt) => {
-    return new Promise(((resolve, reject) => {
-        resolve(new obj(objId,obj,place,createdAt))
-    }))
+let build = (objId,_obj,place,createdAt) => {
+    return new ObjData(objId,_obj,place,createdAt)
 };
 
 module.exports = {
     build,
-    obj
+    ObjData
 };

@@ -4,12 +4,16 @@ let customError = require("../../../util/CustomError");
 let typeCheck = require("type-check").typeCheck;
 let rxmq = require('rxmq').default;
 let multer = require("multer");
-let upload = multer({dest:'uploads/'});
+let upload = multer({dest: 'uploads/'});
 let Promise = require("bluebird");
 
 let face = require("../../../model/face");
 let speaker = require("../../../model/speaker");
 let lights = require("../../../model/lights");
+let storage = require("../../../storage/index");
+let visitorBuilder = require("../../../data/personBuilder");
+
+let bus = require("../../../bus");
 
 
 //방문자가 벨을 눌렀을 때 호출되는 함수
@@ -20,31 +24,70 @@ let lights = require("../../../model/lights");
 //음성으로 방문자가 있다고 알림
 //전등을 켬으로써 알림
 //화면 출력(선택)
-router.post('/visit',upload.single('visitor'),(req,res,next)=>{
+router.get('/person', (req, res, next) => {
 
-    if(!req.file){
-        next(customError.make(400,customError.CODES.VALIDATION_FAILED,"visitor is required"));
-        return;
-    }
+    let visitor = visitorBuilder.build("Friend",Date.now());
 
-    face.recognize(req.file.path)
-        .then((result)=>{
-            //방문자 알리기 -> 말하기
-            return speaker.speak("sentence")
+    bus.publish(bus.ACTIONS.VISIT_SOMEONE, visitor);
+
+    storage.addVisitor(visitor)
+        .then((result) => {
+            return speaker.speak("visit someone")
         })
-        .then(()=>{
-            //방문자 알리기 -> 전등
-            return lights.turnOn()
-        })
-        .then(()=>{
-            rxmq.channel('alarms').subject('add').next(req.body);
-            res.json({action:"visit"});
-        }).catch(()=>{
-            next(customError.make(500,customError.CODES.SERVER_ERROR,"error"));
+        .then(() => {
+            res.json({});
+        }).catch((err) => {
+        console.log(err)
+        next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
     })
 
 });
 
+router.get('/bell', (req, res, next) => {
+    const current = Date.now();
+    bus.publish(bus.ACTIONS.PRESS_BELL, {createdAt: current});
+
+    return lights.turnOn(1, current)
+        .then(() => {
+            return res.json({});
+        })
+        .catch((e) => {
+            return next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        })
+
+});
+
+router.post('/person', (req, res, next) => {
+    const {name} = req.body;
+    let visitor = visitorBuilder.build(name, Date.now());
+
+    bus.publish(bus.ACTIONS.VISIT_SOMEONE, visitor);
+
+    storage.addVisitor(visitor)
+        .then((result) => {
+            return speaker.speak("visit someone")
+        })
+        .then(() => {
+            res.json({});
+        }).catch((err) => {
+        console.log(err)
+        next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+    })
+
+});
+
+router.post('/bell', (req, res, next) => {
+    const current = Date.now();
+    bus.publish(bus.ACTIONS.PRESS_BELL, {createdAt: current});
+
+    return lights.turnOn(1, current)
+        .then(() => {
+            return res.json({});
+        })
+        .catch((e) => {
+            return next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        })
+});
 
 
 module.exports = router;

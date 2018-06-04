@@ -6,6 +6,8 @@ let rxmq = require('rxmq').default;
 let Promise = require("bluebird");
 let messageBuilder = require("../../../data/messageBuilder");
 let dialog = require("../../../model/dialog");
+let chatbot = require("../../../model/chatbot");
+let bus = require("../../../bus/index");
 
 let validation = {
     speech: (req, res, next) => {
@@ -17,6 +19,7 @@ let validation = {
             next(customError.make(400, customError.CODES.VALIDATION_FAILED, "createdAt is required"));
             return;
         }
+
         if (!typeCheck('String', speaker)) {
             next(customError.make(400, customError.CODES.VALIDATION_FAILED, "speaker is required"));
             return;
@@ -34,8 +37,51 @@ let validation = {
 
 };
 
-router.get('/', (req, res, next) => {
-    res.render('index', {title: 'Express'});
+router.get('/ceslea', (req, res, next) => {
+    const {content} = req.query;
+    console.log(content)
+    let newMsg = messageBuilder.build(-1, "ceslea", content, Date.now())
+    bus.publish(bus.ACTIONS.ENABLE_CHATBOT, {})
+    bus.publish(bus.ACTIONS.OUTPUT_SENTENCE, newMsg);
+    res.json({})
+});
+
+
+router.get('/me', (req, res, next) => {
+    const {content} = req.query;
+    console.log(content)
+    let newMsg = messageBuilder.build(-1, "me", content, Date.now())
+    bus.publish(bus.ACTIONS.ENABLE_CHATBOT, {})
+    bus.publish(bus.ACTIONS.INPUT_SENTENCE, newMsg);
+    res.json({})
+});
+
+
+router.get('/travel', (req, res, next) => {
+
+    let message = messageBuilder.build(-1, "me", "i want to travel", Date.now())
+//    bus.publish(bus.ACTIONS.INPUT_SENTENCE, message);
+
+    dialog.recognizeWithActiveState(message)
+        .then((result) => {
+            res.json({})
+        })
+        .catch((err) => {
+            console.log(err)
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        });
+});
+
+router.get('/travel/init', (req, res, next) => {
+
+    chatbot.clear()
+        .then((result) => {
+            res.json({})
+        })
+        .catch((err) => {
+            console.log(err)
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        });
 });
 
 
@@ -46,21 +92,17 @@ router.get('/', (req, res, next) => {
 //화면에 출력(선택)
 router.post('/', validation.speech, (req, res, next) => {
     const {createdAt, speaker, speakerId, content} = req.body;
+    let message = messageBuilder.build(speakerId, speaker, content, createdAt)
+    bus.publish(bus.ACTIONS.INPUT_SENTENCE, message);
 
-    messageBuilder.build(speakerId, speaker, content, createdAt)
-        .then(message => {
-            return dialog.recognize(message)
-        })
-        .then((result)=>{
-           //결과에 따라 응답 문장 생성 또는 대기
-        })
-        .then(()=>{
-            rxmq.channel('alarms').subject('add').next(req.body);
-            res.json(req.body);
+    dialog.recognize(message)
+        .then((result) => {
+            res.json({})
         })
         .catch((err) => {
-        next(customError.make(500, customError.CODES.SERVER_ERROR, "error"))
-    });
+            console.log(err)
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        });
 
 
 });

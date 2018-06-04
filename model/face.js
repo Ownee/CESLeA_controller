@@ -12,7 +12,7 @@ let recognize = (imagePath)=>{
 };
 
 
-exports = {
+module.exports = {
     recognize
 };
 

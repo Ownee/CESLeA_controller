@@ -1,21 +1,23 @@
 
+let bus = require('../bus')
+
 
 class storage{
 
     constructor(){
-        self.messages = [];
-        self.visitors = [];
+        this.messages = [];
+        this.visitors = [];
     }
 
     pushMessage(message){
-        self.messages.push(message)
+        this.messages.push(message)
     }
     pushVisitor(person){
-        self.visitors.push(person)
+        this.visitors.push(person)
     }
 }
 
-let s = storage();
+let s = new storage();
 
 
 
@@ -23,6 +25,7 @@ let s = storage();
 let addMessage = (message)=>{
     return new Promise((resolve => {
         s.pushMessage(message)
+        bus.publish(bus.ACTIONS.SAVE_DATA,message);
         resolve(message)
     }))
 };
@@ -30,12 +33,14 @@ let addMessage = (message)=>{
 
 let addVisitor = (person)=>{
     return new Promise((resolve => {
-        s.pushVisitor(person)
+        s.pushVisitor(person);
+        bus.publish(bus.ACTIONS.SAVE_DATA,person);
         resolve(person)
     }))
 };
 
 module.exports = {
     addMessage,
-    addVisitor
+    addVisitor,
+    s
 };

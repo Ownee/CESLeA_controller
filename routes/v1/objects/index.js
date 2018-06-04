@@ -4,6 +4,7 @@ let customError = require("../../../util/CustomError");
 let typeCheck = require("type-check").typeCheck;
 let rxmq = require('rxmq').default;
 let objBuilder = require("../../../data/objBuilder");
+let objects = require("../../../model/objects");
 let Promise = require("bluebird");
 
 
@@ -36,8 +37,16 @@ let validation = {
 };
 
 
-router.get('/', function (req, res, next) {
-    res.render('index', {title: 'Express'});
+router.get('/:objId/:obj/:place', function (req, res, next) {
+    let mObj = objBuilder.build(req.params.objId, req.params.obj, req.params.place, Date.now())
+    objects.update(mObj)
+        .then(() => {
+            res.json(req.body);
+        })
+        .catch((err) => {
+            console.log(err)
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"))
+        });
 });
 
 
@@ -47,21 +56,17 @@ router.get('/', function (req, res, next) {
 //화면에 출력(선택)
 router.post('/', validation.speech, (req, res, next) => {
     const {obj, objId, place, createdAt} = req.body;
+    console.log(req.body)
 
-    objBuilder.build(objId, obj, place, createdAt)
-        .then(result => {
-            //객체 저장
-        })
+    let mObj = objBuilder.build(objId, obj, place, createdAt)
+    objects.update(mObj)
         .then(() => {
-            rxmq.channel('alarms').subject('add').next(req.body);
             res.json(req.body);
-
         })
         .catch((err) => {
+            console.log(err)
             next(customError.make(500, customError.CODES.SERVER_ERROR, "error"))
         });
-
-
 });
 
 

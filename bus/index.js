@@ -2,19 +2,30 @@
 let rxmq = require('rxmq').default;
 
 
+let publish = (action,data)=>{
+    rxmq.channel('status').subject('data').next({
+        action:action,
+        data:data
+    });
+};
+
+const ACTIONS = {
+
+};
+
 let initialize = (server)=>{
     let io = require("socket.io")(server);
 
-    rxmq.channel('alarms').observe('add')
+    rxmq.channel('status').observe('data')
         .subscribe(
             (data) => {
-                console.log("subscribe",data);
-                io.emit("alarms",data);
+                io.emit("status",data);
             },
             (error) => {
                 console.log("subscribe-error",error);
             }
         );
+
 
 
     io.on("connection",(client)=>{
@@ -29,5 +40,8 @@ let initialize = (server)=>{
 };
 
 module.exports = {
-    initialize
+    initialize,
+    publish,
+    ACTIONS,
+    createSpeakAction
 }

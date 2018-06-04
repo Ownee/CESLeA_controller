@@ -5,7 +5,7 @@ let cookieParser = require('cookie-parser');
 let logger = require('morgan');
 let fs = require('fs');
 let customError = require("./util/CustomError");
-
+let cors = require('cors')
 let indexRouter = require('./routes/v1/index');
 
 let app = express();
@@ -17,8 +17,13 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 //app.use(express.static(path.join(__dirname, 'uploads')));
 
+app.use(cors())
 
 app.use('/api/v1', indexRouter);
+
+app.use('/test', (req,res,next)=>{
+    res.json({success:true})
+});
 
 app.use('/uploads/:fileId', (req, res, next) => {
     const filePath = __dirname+'/uploads/' + req.params.fileId;
@@ -54,6 +59,7 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
+    console.log(err)
     res.status(err.status).json({
         code: err.code,
         message: err.message
