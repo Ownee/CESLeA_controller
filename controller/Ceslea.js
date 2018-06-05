@@ -98,9 +98,10 @@ class Ceslea {
 
     recognizeSentence(msg) {
         this.updateTimer();
+        let listener = this.listener;
         return new Promise((resolve, reject) => {
 
-            if (this.chatbot === Ceslea.STATE.CHATBOT.EXTRA_FINDING) {
+            if (this.chatbot === STATE.CHATBOT.EXTRA_FINDING) {
                 let temp = this.objects.find((item) => {
                     return msg.includes(item.obj)
                 });
@@ -115,14 +116,14 @@ class Ceslea {
                 this.inactiveChatbot();
 
                 if (responseMsg) {
-                    this.listener(ACTION.DISPLAY,responseMsg);
-                    this.listener(ACTION.SPEAK,responseMsg);
+                    listener(ACTION.DISPLAY,responseMsg);
+                    listener(ACTION.SPEAK,responseMsg);
                     resolve({})
                 } else {
                     reject(new Error())
                 }
 
-            } else if (this.chatbot === Ceslea.STATE.CHATBOT.ACTIVE) {
+            } else if (this.chatbot === STATE.CHATBOT.ACTIVE) {
                 if (msg.includes("finish")) {
                     chatbot.clear()
                         .then(() => {
@@ -136,8 +137,8 @@ class Ceslea {
                     chatbot.send(msg)
                         .then((result) => {
                             let responseMsg = result.sentence;
-                            this.listener(ACTION.DISPLAY,responseMsg);
-                            this.listener(ACTION.SPEAK,responseMsg);
+                            listener(ACTION.DISPLAY,responseMsg);
+                            listener(ACTION.SPEAK,responseMsg);
                             resolve({})
                         })
                         .catch((err) => {
@@ -152,8 +153,8 @@ class Ceslea {
                         if (result) {
                             this.activeChatbot();
                             let responseMsg = "Did you call me?";
-                            this.listener(ACTION.DISPLAY,responseMsg);
-                            this.listener(ACTION.SPEAK,responseMsg);
+                            listener(ACTION.DISPLAY,responseMsg);
+                            listener(ACTION.SPEAK,responseMsg);
                             resolve({})
                         } else {
                             chatbot.isTravel(msg)
@@ -163,8 +164,8 @@ class Ceslea {
                                         chatbot.send(msg)
                                             .then((result) => {
                                                 let responseMsg = result.sentence;
-                                                this.listener(ACTION.DISPLAY,responseMsg);
-                                                this.listener(ACTION.SPEAK,responseMsg);
+                                                listener(ACTION.DISPLAY,responseMsg);
+                                                listener(ACTION.SPEAK,responseMsg);
                                                 resolve({})
                                             })
                                             .catch((err) => {
@@ -210,8 +211,8 @@ class Ceslea {
 
 }
 
-let createCeslea = () => {
-    return new Ceslea();
+let createCeslea = (listener) => {
+    return new Ceslea(listener);
 }
 
 module.exports = {

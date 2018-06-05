@@ -1,7 +1,10 @@
 let axios = require("axios")
+const querystring = require('querystring');
+
 
 let speak = (sentence) => {
-    return axios.get("http://" + sentence)
+    return axios.post("http://155.230.104.115:5000/tts",
+        querystring.stringify({text: sentence}))
         .then((result) => {
             return result.data
         })

@@ -2,8 +2,7 @@ let express = require('express');
 let router = express.Router();
 let Promise = require("bluebird");
 let customError = require("../../../util/CustomError");
-
-let Controller = require("../../../controller/index")
+let Controller = require("../../../controller/CesleaManager")
 
 //음성 결과가 들어 오는 함수
 //음성결과( 화자, 화자ID, 내용, 생성시간)

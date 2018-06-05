@@ -1,3 +1,13 @@
+let api = require("./api/index")
+
+api.speak("Soccer and Baseball. Which one do you like? I usually prefer playing soccer than baseball Soccer and Baseball. Which one do you like? I usually prefer playing soccer than baseball Soccer and Baseball. Which one do you like? I usually prefer playing soccer than baseball")
+    .then(()=>{
+
+    })
+    .catch((err)=>{
+        console.log(err)
+    })
+
 
 let lastTimerId = null;
 
@@ -31,13 +41,3 @@ function done() {
     console.log('Now that process.stdin is paused, there is nothing more to do.');
     process.exit();
 }*/
-
-var googleTTS = require('google-tts-api');
-
-googleTTS('Hello World', 'en', 1)   // speed normal = 1 (default), slow = 0.24
-    .then(function (url) {
-        console.log(url); // https://translate.google.com/translate_tts?...
-    })
-    .catch(function (err) {
-        console.error(err.stack);
-    });
