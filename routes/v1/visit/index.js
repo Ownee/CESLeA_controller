@@ -15,6 +15,7 @@ let visitorBuilder = require("../../../data/personBuilder");
 
 let bus = require("../../../bus");
 
+let Controller = require("../../../controller/index")
 
 //방문자가 벨을 눌렀을 때 호출되는 함수
 //이미지파일을 첨부해야한다.
@@ -24,69 +25,38 @@ let bus = require("../../../bus");
 //음성으로 방문자가 있다고 알림
 //전등을 켬으로써 알림
 //화면 출력(선택)
-router.get('/person', (req, res, next) => {
-
-    let visitor = visitorBuilder.build("Friend",Date.now());
-
-    bus.publish(bus.ACTIONS.VISIT_SOMEONE, visitor);
-
-    storage.addVisitor(visitor)
-        .then((result) => {
-            return speaker.speak("visit someone")
-        })
-        .then(() => {
-            res.json({});
-        }).catch((err) => {
-        console.log(err)
-        next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
-    })
-
-});
-
-router.get('/bell', (req, res, next) => {
-    const current = Date.now();
-    bus.publish(bus.ACTIONS.PRESS_BELL, {createdAt: current});
-
-    return lights.turnOn(1, current)
-        .then(() => {
-            return res.json({});
-        })
-        .catch((e) => {
-            return next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
-        })
-
-});
 
 router.post('/person', (req, res, next) => {
     const {name} = req.body;
-    let visitor = visitorBuilder.build(name, Date.now());
 
-    bus.publish(bus.ACTIONS.VISIT_SOMEONE, visitor);
-
-    storage.addVisitor(visitor)
-        .then((result) => {
-            return speaker.speak("visit someone")
-        })
+    let mPerson = {
+        name: name,
+        createdAt: Date.now()
+    };
+    Controller.recognizePerson(mPerson)
         .then(() => {
             res.json({});
-        }).catch((err) => {
-        console.log(err)
-        next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
-    })
-
+        })
+        .catch((err) => {
+            console.log(err);
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        });
 });
 
 router.post('/bell', (req, res, next) => {
-    const current = Date.now();
-    bus.publish(bus.ACTIONS.PRESS_BELL, {createdAt: current});
+    const mBell = {
+        createdAt: Date.now()
+    };
 
-    return lights.turnOn(1, current)
+    Controller.recognizeBell(mBell)
         .then(() => {
-            return res.json({});
+            res.json({});
         })
-        .catch((e) => {
-            return next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
-        })
+        .catch((err) => {
+            console.log(err);
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
+        });
+
 });
 
 

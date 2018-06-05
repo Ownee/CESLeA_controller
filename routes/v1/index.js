@@ -16,19 +16,5 @@ router.use('/visit', visit);
 
 router.use('/actions', actions);
 
-/*
-
-router.use('/test',(req,res,next)=>{
-    Promise.try(()=>{
-        console.log("start")
-    }).then(()=> {
-        console.log("here");
-        return res.json({action: "test"})
-    }).catch((err)=>{
-        next(customError.make(404,customError.CODES.NOT_FOUND));
-    });
-});
-*/
-
 
 module.exports = router;

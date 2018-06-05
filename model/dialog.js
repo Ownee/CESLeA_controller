@@ -175,38 +175,6 @@ let updateFindingState = () => {
 };
 
 
-/*
-let convTravel = (message)=>{
-    return new Promise((resolve, reject) => {
-        if (!message instanceof messageBuilder.message) {
-            reject(new Error("object is not instance of message"))
-        } else {
-            if (message.content && message.content.toLowerCase().includes("finish")) {
-                chatbot.clear()
-                    .then(() => {
-                        state = STATE.IDLE;
-                        bus.publish(bus.ACTIONS.DISABLE_CHATBOT, {})
-                        resolve()
-                    }).catch((err) => {
-                    reject(err)
-                })
-            } else {
-                chatbot.send(message.content)
-                    .then((result) => {
-                        let newMsg = messageBuilder.build(-1, "ceslea", result.sentence, Date.now())
-                        bus.publish(bus.ACTIONS.OUTPUT_SENTENCE, newMsg);
-                        return speaker.speak(message.content)
-                    }).then(() => {
-                    resolve({})
-                }).catch((err) => {
-                    reject(err)
-                })
-            }
-
-        }
-    });
-}*/
-
 module.exports = {
     recognize,
     recognizeWithActiveState,

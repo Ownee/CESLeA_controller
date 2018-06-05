@@ -45,7 +45,7 @@ let clear = () => {
 
 let isCeslea = (sentence)=>{
     return new Promise((resolve, reject) => {
-        if (sentence.toLowerCase().includes("ceslea")||sentence.toLowerCase().includes("cecilia")) {
+        if (sentence.includes("ceslea")||sentence.includes("cecilia")) {
             resolve(true)
         } else {
             resolve(false)
@@ -65,6 +65,11 @@ let isTravel = (sentence) => {
         })
     })
 };
+
+
+
+
+
 
 module.exports = {
     send,

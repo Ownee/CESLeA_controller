@@ -17,13 +17,12 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 //app.use(express.static(path.join(__dirname, 'uploads')));
 
-app.use(cors())
+app.use(cors());
 
 app.use('/api/v1', indexRouter);
 
-app.use('/test', (req,res,next)=>{
-    res.json({success:true})
-});
+/*
+
 
 app.use('/uploads/:fileId', (req, res, next) => {
     const filePath = __dirname+'/uploads/' + req.params.fileId;
@@ -42,6 +41,7 @@ app.use('/uploads/:fileId', (req, res, next) => {
         }
     });
 });
+*/
 
 app.use('/state', (req, res, next) => {
     res.json({
