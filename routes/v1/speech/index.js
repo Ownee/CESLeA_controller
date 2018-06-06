@@ -2,7 +2,6 @@ let express = require('express');
 let router = express.Router();
 let Promise = require("bluebird");
 let customError = require("../../../util/CustomError");
-
 let Controller = require("../../../controller/CesleaManager")
 
 //음성 결과가 들어 오는 함수

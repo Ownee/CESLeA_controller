@@ -22,7 +22,7 @@ let initialize = (server) => {
         .subscribe(
             (data) => {
                 if (data.action === ACTIONS.SPEAK) {
-                    api.speak()
+                    api.speak(data.data)
                         .then(() => {
 
                         })
