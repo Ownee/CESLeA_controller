@@ -13,11 +13,11 @@ router.post('/', (req, res, next) => {
     const {obj, objId, kinectId, createdAt, objState, personId, place} = req.body;
     let mObj = {
         obj:obj,
-        objId:objId,
-        kinectId:kinectId,
+        objId:parseInt(objId),
+        kinectId:parseInt(kinectId),
         place:place,
         createdAt:createdAt,
-        personId:personId,
+        personId:parseInt(personId),
         objState:objState
     };
     console.log(mObj);

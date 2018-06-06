@@ -115,7 +115,8 @@ let recognizeObject = (obj) => {
 
 let recognizeBell = (bell) => {
     return new Promise((resolve, reject) => {
-        resolve("")
+        ceslea.updateBell();
+        resolve("");
     })
 };
 

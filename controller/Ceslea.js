@@ -18,6 +18,7 @@ const STATE = {
         OBJ: "OBJ",
         ACTION: "ACTION",
         INTENT: "INTENT",
+        BELL:"BELL"
     },
 };
 
@@ -68,9 +69,11 @@ class Ceslea {
             ACTION: "",
 
             INTENT: "",
+
+            BELL:""
         };
-        this.objects = []
-        setInterval(this.checkState.bind(this),1000);
+        this.objects = [];
+        setInterval(this.checkState.bind(this),3000)
     }
 
     activeChatbot() {
@@ -189,18 +192,29 @@ class Ceslea {
     }
 
     checkState() {
-        console.log("===================================")
-        console.log(this)
-        console.log("===================================")
+        console.log("===================================");
+        console.log(this.state)
+
+        //if bell true -> false
+
+        this.state = Object.assign({},this.state,{
+            [STATE.INPUT.BELL]:0
+        })
+
     }
 
     updateAction(action) {
-        let prevAction = this.state[STATE.INPUT.ACTION]
+        this.state = Object.assign({},this.state,{
+            [STATE.INPUT.INTENT]:action.action
+        })
 
     }
 
     updateIntent(intent) {
-        let prevIntent = this.state[STATE.INPUT.INTENT]
+        this.state = Object.assign({},this.state,{
+            [STATE.INPUT.INTENT]:intent.intent
+        })
+
     }
 
     updatePerson(person) {
@@ -208,7 +222,36 @@ class Ceslea {
     }
 
     updateObject(obj) {
+        if(obj.objState===2){
+            //옮겨진 물체
+            this.state = Object.assign({},this.state,{
+                [STATE.INPUT.OBJ]:obj.obj,
+            })
+        }else if(obj.objState===1){
+            //관심객체
+            if(obj.personId===0){
+                //주인
+                this.state = Object.assign({},this.state,{
+                    [STATE.INPUT.OWNER]:obj.personId,
+                    [STATE.INPUT.OWNER_OBJ]:obj.obj
+                })
+            }else if(obj.personId===1){
+                //손님
+                this.state = Object.assign({},this.state,{
+                    [STATE.INPUT.GUEST]:obj.personId,
+                    [STATE.INPUT.GUEST_OBJ]:obj.obj
+                })
+            }else{
 
+            }
+        }
+
+    }
+
+    updateBell(){
+        this.state = Object.assign({},this.state,{
+            [STATE.INPUT.BELL]:1
+        })
     }
 
 }
