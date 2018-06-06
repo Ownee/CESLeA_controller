@@ -1,9 +1,8 @@
 let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
-let objects = require("../../../model/objects");
 let Promise = require("bluebird");
-let Controller = require("../../../controller/index")
+let Controller = require("../../../controller/CesleaManager")
 
 
 //객체 정보가 들어오는 함수

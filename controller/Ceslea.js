@@ -53,7 +53,6 @@ class Ceslea {
         this.listener = listener;
         this.lastUpdateId = null;
         this.lastTimerId = null;
-
         this.chatbot = STATE.CHATBOT.IDLE;
         this.state = {
             GUEST: "",
@@ -71,6 +70,7 @@ class Ceslea {
             INTENT: "",
         };
         this.objects = []
+        setInterval(this.checkState.bind(this),1000);
     }
 
     activeChatbot() {
@@ -187,8 +187,10 @@ class Ceslea {
 
     }
 
-    recognizeState() {
-
+    checkState() {
+        console.log("===================================")
+        console.log(this)
+        console.log("===================================")
     }
 
     updateAction(action) {

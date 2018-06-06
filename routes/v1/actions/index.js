@@ -2,7 +2,7 @@ let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
 let Promise = require("bluebird");
-let Controller = require("../../../controller/index")
+let Controller = require("../../../controller/CesleaManager")
 
 
 //http:localhost:3001/api/v1/actions/action/{action name}

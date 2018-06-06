@@ -1,21 +1,9 @@
 let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
-let typeCheck = require("type-check").typeCheck;
-let rxmq = require('rxmq').default;
-let multer = require("multer");
-let upload = multer({dest: 'uploads/'});
 let Promise = require("bluebird");
 
-let face = require("../../../model/face");
-let speaker = require("../../../model/speaker");
-let lights = require("../../../model/lights");
-let storage = require("../../../storage/index");
-let visitorBuilder = require("../../../data/personBuilder");
-
-let bus = require("../../../bus");
-
-let Controller = require("../../../controller/index")
+let Controller = require("../../../controller/CesleaManager")
 
 //방문자가 벨을 눌렀을 때 호출되는 함수
 //이미지파일을 첨부해야한다.
