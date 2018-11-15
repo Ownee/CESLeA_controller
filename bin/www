@@ -7,7 +7,7 @@
 let app = require('../app');
 let debug = require('debug')('cesleamaincontroller:server');
 let http = require('http');
-let subscriber = require("../bus/index")
+let CesleaController = require("../controller/CesleaController")
 /**
  * Get port from environment and store in Express.
  */
@@ -20,7 +20,7 @@ app.set('port', port);
  */
 
 let server = http.createServer(app);
-subscriber.initialize(server);
+CesleaController.initialize(server);
 /**
  * Listen on provided port, on all network interfaces.
  */

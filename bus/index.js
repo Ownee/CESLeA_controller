@@ -11,8 +11,12 @@ let publish = (action, data) => {
 const ACTIONS = {
     SPEAK: "SPEAK",
     DISPLAY: "DISPLAY",
-    TURN_LIGHT: "TURN_LIGHT",
+    TURN_ON_LIGHT: "TURN_ON_LIGHT",
+    TURN_OFF_LIGHT: "TURN_OFF_LIGHT",
     UPDATE_OBJECT: "UPDATE_OBJECT",
+    UPDATE_ACTION: "UPDATE_ACTION",
+    UPDATE_INTENT: "UPDATE_INTENT",
+    UPDATE_SITUATION: "UPDATE_SITUATION",
 };
 
 let initialize = (server) => {
@@ -30,8 +34,16 @@ let initialize = (server) => {
 
                         })
 
-                } else if (data.action === ACTIONS.TURN_LIGHT) {
-                    api.turnLight()
+                } else if (data.action === ACTIONS.TURN_ON_LIGHT) {
+                    api.turnOnLight()
+                        .then(() => {
+
+                        })
+                        .catch((err) => {
+
+                        })
+                }else if (data.action === ACTIONS.TURN_OFF_LIGHT) {
+                    api.turnOffLight()
                         .then(() => {
 
                         })

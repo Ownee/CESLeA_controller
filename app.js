@@ -8,7 +8,37 @@ let customError = require("./util/CustomError");
 let cors = require('cors')
 let indexRouter = require('./routes/v1/index');
 
+let mysql = require('mysql');
+
+
 let app = express();
+
+let connection = mysql.createConnection({
+    host     : 'localhost',
+    user     : 'root',
+    password : 'abr',
+    database : 'demodb'
+});
+
+connection.connect();
+
+app.post('/users', function(req, res) {
+    let user = req.body;
+    console.log("user : " + user)
+    let sql = "INSERT INTO ceslea_tbl (person_id, summarization) VALUES ('1', 'He talks about weather')";
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log("1 record inserted");
+    });
+});
+
+app.post('/select', function(req, res) {
+    let aa = 1;
+    connection.query("SELECT * FROM ceslea_tbl WHERE person_id = " + aa.toString(), function (err, result, fields) {
+        if (err) throw err;
+        console.log(result[0].summarization);
+    });
+});
 
 app.use(logger('dev'));
 app.use(express.json());

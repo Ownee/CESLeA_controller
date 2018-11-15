@@ -2,15 +2,19 @@ let express = require('express');
 let router = express.Router();
 let Promise = require("bluebird");
 let customError = require("../../../util/CustomError");
-let Controller = require("../../../controller/CesleaManager")
+let {dispatch} = require("../../../controller/CesleaController")
+let {ACTIONS} = require("../../../controller/C")
 
-//음성 결과가 들어 오는 함수
-//음성결과( 화자, 화자ID, 내용, 생성시간)
-//음성결과 들어오면 내용을 저장하고 대화를 분석한 뒤
-//응답을 해야하면 문장을 생성하고 아니면 대기한다.
-//화면에 출력(선택)
+/*
 router.post('/', (req, res, next) => {
-    const {createdAt, speaker, speakerId, content} = req.body;
+    const {createdAt, speaker, speakerId, } = req.body;
+
+    let content = req.body.content;
+
+    let _content = content.toLowerCase();
+    if(_content==="social media" || _content==="cecilia"){
+        content="CESLeA"
+    }
 
     const mMsg = {
         speaker:speaker,
@@ -19,7 +23,36 @@ router.post('/', (req, res, next) => {
         createdAt:createdAt
     };
 
-    Controller.recognizeSentence(mMsg)
+    dispatch(ACTIONS.INPUT_SENTENCE,mMsg)
+        .then(() => {
+            res.json(req.body);
+        })
+        .catch((err) => {
+            console.log(err);
+            next(customError.make(500, customError.CODES.SERVER_ERROR, "error"))
+        });
+
+});*/
+
+router.post('/browser', (req, res, next) => {
+
+    const {createdAt, speaker, speakerId, } = req.body;
+
+    let content = req.body.content;
+
+    let _content = content.toLowerCase();
+    if(_content==="social media" || _content==="cecilia"){
+        content="CESLeA"
+    }
+
+    const mMsg = {
+        speaker:speaker,
+        speakerId:speakerId,
+        content:content,
+        createdAt:createdAt
+    };
+
+    dispatch(ACTIONS.INPUT_SENTENCE,mMsg)
         .then(() => {
             res.json(req.body);
         })
@@ -29,6 +62,5 @@ router.post('/', (req, res, next) => {
         });
 
 });
-
 
 module.exports = router;

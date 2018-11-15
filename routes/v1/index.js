@@ -4,6 +4,7 @@ let objects = require("./objects/index");
 let speech = require("./speech/index");
 let visit = require("./visit/index");
 let actions = require("./actions/index");
+let faces = require("./faces/index");
 let Promise = require("bluebird");
 let customError = require("../../util/CustomError");
 
@@ -15,6 +16,9 @@ router.use('/speech', speech);
 router.use('/visit', visit);
 
 router.use('/actions', actions);
+
+router.use('/faces', faces);
+
 
 
 module.exports = router;

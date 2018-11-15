@@ -2,26 +2,55 @@ let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
 let Promise = require("bluebird");
-let Controller = require("../../../controller/CesleaManager")
+let {dispatch} = require("../../../controller/CesleaController")
+let {ACTIONS} = require("../../../controller/C")
+
+const OBJECT_MAP = {
+    0: "Person",
+    24: "Backpack",
+    39: "Bottle",
+    41: "Cup",
+    56: "Chair",
+    57: "Sofa",
+    58: "Potted plant",
+    62: "TV monitor",
+    63: "Laptop",
+    64: "Mouse",
+    66: "Keyboard",
+    67: "Remote",
+    73: "Book",
+    74: "Clock",
+    75: "Vase",
+};
+
+const PLACE_MAP = {
+    1:"Rest room",
+    2:"Living room",
+    3:"Kitchen",
+    4:"Room",
+};
 
 
-//객체 정보가 들어오는 함수
-//객체 정보(객체,객체ID,장소,생성일)
-//객체 정보가 들어오면 내용을 저장한다.
-//화면에 출력(선택)
+
+
+
+
 router.post('/', (req, res, next) => {
     const {obj, objId, kinectId, createdAt, objState, personId, place} = req.body;
+
+
     let mObj = {
-        obj:obj,
-        objId:parseInt(objId),
-        kinectId:parseInt(kinectId),
-        place:place,
-        createdAt:createdAt,
-        personId:parseInt(personId),
-        objState:objState
+        obj: parseInt(obj) === 65 ? OBJECT_MAP[67] : OBJECT_MAP[parseInt(obj)]||"Object",
+        objId: parseInt(objId) === 65 ? 67 : parseInt(objId),
+        kinectId: parseInt(kinectId),
+        place: parseInt(place),
+        placeName: PLACE_MAP[parseInt(place)]||"OTHERS",
+        createdAt: createdAt,
+        personId: parseInt(personId),
+        objState: parseInt(objState)
     };
-    console.log(mObj);
-    Controller.recognizeObject(mObj)
+
+    dispatch(ACTIONS.INPUT_OBJECT, mObj)
         .then(() => {
             res.json(req.body);
         })

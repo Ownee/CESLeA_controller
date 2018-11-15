@@ -2,26 +2,15 @@ let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
 let Promise = require("bluebird");
+let {dispatch} = require("../../../controller/CesleaController");
+let {ACTIONS} = require("../../../controller/C");
 
-let Controller = require("../../../controller/CesleaManager")
 
-//방문자가 벨을 눌렀을 때 호출되는 함수
-//이미지파일을 첨부해야한다.
-//이미지파일을 얼굴인식 모듈로 전달해서 방문자 기본정보를 가져오고
-//구글캘린더 연동시 보다 상세한 정보를 캘린더로 부터 가져온다
-//방문자 저장
-//음성으로 방문자가 있다고 알림
-//전등을 켬으로써 알림
-//화면 출력(선택)
-
-router.post('/person', (req, res, next) => {
-    const {name} = req.body;
-
-    let mPerson = {
-        name: name,
+router.post('/bell', (req, res, next) => {
+    const mBell = {
         createdAt: Date.now()
     };
-    Controller.recognizePerson(mPerson)
+    dispatch(ACTIONS.INPUT_BELL_SIGNAL,mBell)
         .then(() => {
             res.json({});
         })
@@ -29,14 +18,11 @@ router.post('/person', (req, res, next) => {
             console.log(err);
             next(customError.make(500, customError.CODES.SERVER_ERROR, "error"));
         });
+
 });
 
-router.post('/bell', (req, res, next) => {
-    const mBell = {
-        createdAt: Date.now()
-    };
-
-    Controller.recognizeBell(mBell)
+router.get('/restart',(req,res,next)=>{
+    dispatch(ACTIONS.RESTART_SPEECH_RECOGNITION)
         .then(() => {
             res.json({});
         })

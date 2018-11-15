@@ -2,21 +2,26 @@ let express = require('express');
 let router = express.Router();
 let customError = require("../../../util/CustomError");
 let Promise = require("bluebird");
-let Controller = require("../../../controller/CesleaManager")
+let {dispatch} = require("../../../controller/CesleaController")
+let {ACTIONS} = require("../../../controller/C")
 
 
-//http:localhost:3001/api/v1/actions/action/{action name}
-//http:localhost:3001/api/v1/actions/intent/{intent name}
+router.get('/action', function (req, res, next) {
+    console.log("Get Action");
+});
+
 
 router.get('/action/:place/:action', (req, res, next) => {
     const {action, place} = req.params;
+    console.log("place : " + place);
+    console.log("action : " + action);
 
     let mAction = {
         action: action,
         place: place
     };
 
-    Controller.recognizeAction(mAction)
+    dispatch(ACTIONS.INPUT_ACTION, mAction)
         .then(() => {
             res.json(req.body);
         })
@@ -33,7 +38,8 @@ router.get('/intent/:place/:intent', (req, res, next) => {
         intent: intent,
         place: place
     };
-    Controller.recognizeIntent(mIntent)
+
+    dispatch(ACTIONS.INPUT_INTENT,mIntent)
         .then(() => {
             res.json(req.body);
         })

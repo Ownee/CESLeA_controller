@@ -15,6 +15,13 @@ let englishCheckAPI = (sentence) => {
         })
 }
 
+let englishChatqAPI = (sentence) => {
+    return axios.get("http://localhost:3010/api/v1/chatbot/english/question?sentence=" + sentence)
+        .then((result) => {
+            return result.data
+        })
+}
+
 let englishInitAPI = () => {
     return axios.get("http://localhost:3010/api/v1/chatbot/init/english")
         .then((result) => {
@@ -25,6 +32,16 @@ let englishInitAPI = () => {
 let send = (sentence) => {
     return new Promise((resolve, reject) => {
         englishChatAPI(sentence).then((result) => {
+            resolve(result)
+        }).catch((err) => {
+            reject(err)
+        })
+    })
+};
+
+let sendwithQ = (sentence) => {
+    return new Promise((resolve, reject) => {
+        englishChatqAPI(sentence).then((result) => {
             resolve(result)
         }).catch((err) => {
             reject(err)
@@ -45,7 +62,8 @@ let clear = () => {
 
 let isCeslea = (sentence)=>{
     return new Promise((resolve, reject) => {
-        if (sentence.includes("ceslea")||sentence.includes("cecilia")) {
+        let _sentence = sentence.toLowerCase();
+        if (_sentence.includes("ceslea")||_sentence.includes("cecilia")||_sentence.includes("social media")) {
             resolve(true)
         } else {
             resolve(false)
@@ -75,5 +93,6 @@ module.exports = {
     send,
     clear,
     isTravel,
-    isCeslea
+    isCeslea,
+    sendwithQ
 }

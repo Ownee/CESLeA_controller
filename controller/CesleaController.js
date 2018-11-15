@@ -1,192 +1,261 @@
 let Promise = require("bluebird");
 let Ceslea = require("./Ceslea");
-let bus = require("../bus/index");
 let chatbot = require("../model/chatbot")
+let rxmq = require('rxmq').default;
+let api = require("../api/index")
+const {CHANNEL,ACTIONS,SUBJECT} = require("./C")
+let mysql = require('mysql');
 
-/*
-    ==============================================
-    변수 들 
-    ==============================================
 
- */
 
-let listener = (action, data) => {
-    switch (action) {
-        case Ceslea.ACTION.ASK_OBJECT:
-            _askObject();
-            break;
-        case Ceslea.ACTION.TURN_ON_LIGHT:
-            _turnOnLight();
-            break;
-        case Ceslea.ACTION.TURN_OFF_LIGHT:
-            _turnOffLight();
-            break;
-        case Ceslea.ACTION.DISPLAY_SITUATION:
-            _displaySituation(data);
-            break;
-        case Ceslea.ACTION.DISPLAY:
-            _displayMessage(data);
-            break;
-        case Ceslea.ACTION.SPEAK:
-            _speakMessage(data);
-            break;
-        case Ceslea.ACTION.UPDATE_ACTION:
-            _displayAction(data);
-            break;
-        case Ceslea.ACTION.UPDATE_INTENT:
-            _displayIntent(data);
-            break;
+let ceslea = null;
 
-        default:
-            break;
-    }
+let _dispatch = (channel, action, data) => {
+    rxmq.channel(channel).subject(SUBJECT.DATA).next({
+        action: action,
+        data: data
+    });
 };
 
-let ceslea = Ceslea.createCeslea(listener);
-
-
-
-/*
-    ==============================================
-    내부 함수들
-    ==============================================
- */
-let _makeError = (message) => {
-    return new Error(message)
-};
-
-let _displaySituation = (content) => {
-    bus.publish(bus.ACTIONS.UPDATE_SITUATION, {
-        content: content
-    })
-};
-
-
-let _displayMessage = (content) => {
-    bus.publish(bus.ACTIONS.DISPLAY, {
-        person: "CESLeA",
-        content: content
-    })
-};
-
-
-let _displayAction = (content) => {
-    bus.publish(bus.ACTIONS.UPDATE_ACTION, {
-        action: content
-    })
-};
-
-
-let _displayIntent = (content) => {
-    bus.publish(bus.ACTIONS.UPDATE_INTENT, {
-        intent: content
-    })
-};
-
-let _displayMessageFromOthers = (person, content) => {
-    bus.publish(bus.ACTIONS.DISPLAY, {
-        person: person,
-        content: content
-    })
-};
-let _askObject = ()=>{
-    ceslea.activeExtraFinding();
-    let responseMsg = "What are you looking for?";
-    _speakMessage(responseMsg);
-    _displayMessage(responseMsg);
-};
-
-let _speakMessage = (content) => {
-    bus.publish(bus.ACTIONS.SPEAK, content)
-};
-
-let _turnOnLight = () => {
-    bus.publish(bus.ACTIONS.TURN_ON_LIGHT)
-};
-let _turnOffLight = () => {
-    bus.publish(bus.ACTIONS.TURN_OFF_LIGHT)
-};
-
-
-/*
-    ==============================================
-    외부 함수들
-    ==============================================
- */
-
-
-//사람 인식
-let recognizePerson = (person) => {
+let dispatch = (action, data) => {
+    console.log("action : " + action);
     return new Promise((resolve, reject) => {
-        ceslea.updatePerson(person);
-        resolve("")
-    })
-};
+        switch (action) {
+            case ACTIONS.INPUT_SENTENCE:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.INPUT_BELL_SIGNAL:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.INPUT_INTENT:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.INPUT_ACTION:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.INPUT_OBJECT:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.INPUT_FACE:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.DISPLAY_ACTION:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.DISPLAY_INTENT:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.DISPLAY_OBJECT:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.DISPLAY_SENTENCE:
+                _dispatch(CHANNEL.OUTPUT, action,  {
+                    person:"CESLeA",
+                    content:data
+                });
+                break;
+            case ACTIONS.DISPLAY_SITUATION:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.SPEAK_SENTENCE:
+                _dispatch(CHANNEL.OUTPUT, action,data);
+                break;
+            case ACTIONS.TURN_OFF_LIGHT:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.TURN_ON_LIGHT:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.RESTART_SPEECH_RECOGNITION:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            case ACTIONS.SHOW_SUMMARIZATION:
+                _dispatch(CHANNEL.OUTPUT, action, data);
+                break;
+            default:
+                break;
+        }
 
-let recognizeAction = (action) => {
-    return new Promise((resolve, reject) => {
-        ceslea.updateAction(action);
-        resolve("")
-    })
-
-};
-
-let recognizeIntent = (intent) => {
-    return new Promise((resolve, reject) => {
-        ceslea.updateIntent(intent);
-        resolve("")
-
-    })
-};
-
-let recognizeObject = (obj) => {
-    return new Promise((resolve, reject) => {
-        ceslea.updateObject(obj);
-        resolve("")
-    })
-};
-
-let recognizeBell = (bell) => {
-    return new Promise((resolve, reject) => {
-        ceslea.updateBell();
         resolve("");
+    });
+
+
+};
+
+
+const initialize = (server) => {
+    ceslea = Ceslea.createCeslea(dispatch);
+
+    let io = require("socket.io")(server);
+
+    let connection = mysql.createConnection({
+        host     : 'localhost',
+        user     : 'root',
+        password : 'abr',
+        database : 'demodb'
+    });
+
+    connection.connect();
+
+    //connection.query("DELETE FROM ceslea_tbl_face");
+
+    rxmq.channel(CHANNEL.INPUT).observe(SUBJECT.DATA)
+        .subscribe(
+            (data) => {
+                switch (data.action) {
+                    case ACTIONS.INPUT_OBJECT:
+                        ceslea.updateObject(data.data);
+                        break;
+                    case ACTIONS.INPUT_ACTION:
+                        ceslea.updateAction(data.data);
+                        break;
+                    case ACTIONS.INPUT_INTENT:
+                        ceslea.updateIntent(data.data);
+                        break;
+                    case ACTIONS.INPUT_BELL_SIGNAL:
+                        ceslea.updateBell(data.data);
+                        break;
+                    case ACTIONS.INPUT_FACE:
+                        let name = data.data;
+                        if (name != ceslea.personName) {
+                            connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "')", function (err, result, fields) {
+                                if (err) throw err;
+                                if (result == 1) {
+                                    connection.query("SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "'", function (err, result, fields) {
+                                        if (err) throw err;
+                                        console.log(result[0].person_name);
+                                        ceslea.personId = parseInt(result[0].person_id);
+                                        ceslea.personName = name;
+                                    });
+                                } else {
+                                    if (ceslea.updateFace(name)) {
+                                        let sql = "INSERT INTO ceslea_tbl_face (person_id, person_name, summarization) VALUES (?, ?, ?)";
+                                        let sqlparams = [ceslea.personId, ceslea.personName.replace(/'/g, "\\'"), "User " + ceslea.personName.replace(/'/g, "\\'")];
+                                        connection.query(sql, sqlparams, function (err, result) {
+                                            if (err) throw err;
+                                            console.log("User " + ceslea.personName + " is inserted as a new person");
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                        break;
+                    case ACTIONS.INPUT_SENTENCE:
+                        if (ceslea.personId > 0) {
+                            data.data.speakerId = ceslea.personId.toString();
+                            data.data.speaker = ceslea.personName;
+                            let sql = "INSERT INTO ceslea_tbl_face (person_id, summarization) VALUES (?, ?)";
+                            let sqlparams = [ceslea.personId, data.data.content.replace(/'/g, "\\'")];
+                            connection.query(sql, sqlparams, function (err, result) {
+                                if (err) throw err;
+                                console.log("Person " + ceslea.personId.toString() + " DB user input record inserted");
+                            });
+                        }
+                        io.emit("status", data);
+                        ceslea.updateSentence(data.data.content);
+                        break;
+                    default :
+                        break;
+                }
+            },
+            (error) => {
+                console.log("subscribe-error", error);
+            }
+        );
+
+
+    rxmq.channel(CHANNEL.OUTPUT).observe(SUBJECT.DATA)
+        .subscribe(
+            (data) => {
+                console.log(data)
+                switch (data.action) {
+                    case ACTIONS.SPEAK_SENTENCE:
+                        if (ceslea.personId > 0) {
+                            let sql = "INSERT INTO ceslea_tbl_face (person_id, summarization) VALUES (?, ?)";
+                            let sqlparams = [ceslea.personId, data.data.replace(/'/g, "\\'")];
+                            connection.query(sql, sqlparams, function (err, result) {
+                                if (err) throw err;
+                                console.log("Person " + ceslea.personId.toString() + " DB chatbot input record inserted");
+                            });
+                        }
+                        // if (data.data.length > 240) {
+                        //     var arr = data.data.split("\n");
+                        //     for(var i=0;i<arr.length;i++) {
+                        //         var tempdata = {};
+                        //         tempdata.action = data.action;
+                        //         tempdata.data = arr[i];
+                        //         io.emit("action", tempdata);
+                        //     }
+                        // } else {
+                        data.data = data.data.substring(0, 245);
+                        io.emit("action", data);
+                        // }
+                        break;
+                    case ACTIONS.RESTART_SPEECH_RECOGNITION:
+                        io.emit("action", data);
+                        break;
+                    case ACTIONS.TURN_ON_LIGHT:
+                        console.log("turn on")
+                        api.turnOnLight()
+                            .then(() => {
+                            })
+                            .catch((err) => {
+                                console.log(err)
+                            });
+                        break;
+                    case ACTIONS.TURN_OFF_LIGHT:
+                        console.log("turn off")
+                        api.turnOffLight()
+                            .then(() => {
+                            })
+                            .catch((err) => {
+                                console.log(err)
+                            });
+                        break;
+                    case ACTIONS.SHOW_SUMMARIZATION:
+                        if (ceslea.personId > 0) {
+                            let msg = "";
+                            connection.query("SELECT * FROM ceslea_tbl_face WHERE person_id = " + ceslea.personId.toString(), function (err, result, fields) {
+                                if (err) throw err;
+                                console.log(result);
+                                for(var i=0;i<result.length;i++) {
+                                    msg = msg + result[i].summarization + " ";
+                                }
+                                console.log(msg);
+                                ceslea.showSummarization(msg);
+                            });
+                        }
+                        //console.log(msg);
+                        //data.action = ACTIONS.SPEAK_SENTENCE;
+                        //data.data = msg;
+                        //io.emit("action", data);
+                        //ceslea.showSummarization(msg);
+                        break;
+                    default :
+                        io.emit("status", data);
+                        break;
+                }
+
+            },
+            (error) => {
+                console.log("subscribe-error", error);
+            }
+        );
+
+
+    io.on("connection", (client) => {
+        console.log("connection")
+        client.on("event", (data) => {
+
+        });
+        client.on("disconnect", () => {
+
+        });
     })
-};
-
-
-
-/*
-    ===================================================
-    챗봇
-    ===================================================
- */
-
-
-
-let recognizeSentence = (message) => {
-    let msg = message.content.toLowerCase();
-    if(msg==="social media" || msg==="cecilia"){
-        message.content="CESLeA"
-    }
-    _displayMessageFromOthers(message.speaker, message.content);
-
-    return ceslea.recognizeSentence(msg)
-
-};
-
-let recognizeSentenceForceActive = (message) => {
-    ceslea.activeChatbot();
-    return recognizeSentence(message)
-
 };
 
 
 module.exports = {
-    recognizeSentence,
-    recognizePerson,
-    recognizeAction,
-    recognizeIntent,
-    recognizeBell,
-    recognizeObject,
-    recognizeSentenceForceActive
-}
+    initialize,
+    dispatch
+};

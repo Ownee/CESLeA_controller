@@ -10,8 +10,14 @@ let speak = (sentence) => {
         })
 };
 
-let turnLight = () => {
-    return axios.get("http://")
+let turnOnLight = () => {
+    return axios.get("http://155.230.104.19:6436/on")
+        .then((result) => {
+            return result.data
+        })
+};
+let turnOffLight = () => {
+    return axios.get("http://155.230.104.19:6436/off")
         .then((result) => {
             return result.data
         })
@@ -19,5 +25,6 @@ let turnLight = () => {
 
 module.exports = {
     speak,
-    turnLight
+    turnOffLight,
+    turnOnLight
 }
