@@ -15,17 +15,26 @@ let listener = (action, data) => {
         case Ceslea.ACTION.ASK_OBJECT:
             _askObject();
             break;
-        case Ceslea.ACTION.TURN_LIGHT:
-            _turnLight();
+        case Ceslea.ACTION.TURN_ON_LIGHT:
+            _turnOnLight();
             break;
-        case Ceslea.ACTION.GREETING:
-
+        case Ceslea.ACTION.TURN_OFF_LIGHT:
+            _turnOffLight();
+            break;
+        case Ceslea.ACTION.DISPLAY_SITUATION:
+            _displaySituation(data);
             break;
         case Ceslea.ACTION.DISPLAY:
             _displayMessage(data);
             break;
         case Ceslea.ACTION.SPEAK:
             _speakMessage(data);
+            break;
+        case Ceslea.ACTION.UPDATE_ACTION:
+            _displayAction(data);
+            break;
+        case Ceslea.ACTION.UPDATE_INTENT:
+            _displayIntent(data);
             break;
 
         default:
@@ -46,10 +55,31 @@ let _makeError = (message) => {
     return new Error(message)
 };
 
+let _displaySituation = (content) => {
+    bus.publish(bus.ACTIONS.UPDATE_SITUATION, {
+        content: content
+    })
+};
+
+
 let _displayMessage = (content) => {
     bus.publish(bus.ACTIONS.DISPLAY, {
         person: "CESLeA",
         content: content
+    })
+};
+
+
+let _displayAction = (content) => {
+    bus.publish(bus.ACTIONS.UPDATE_ACTION, {
+        action: content
+    })
+};
+
+
+let _displayIntent = (content) => {
+    bus.publish(bus.ACTIONS.UPDATE_INTENT, {
+        intent: content
     })
 };
 
@@ -70,8 +100,11 @@ let _speakMessage = (content) => {
     bus.publish(bus.ACTIONS.SPEAK, content)
 };
 
-let _turnLight = () => {
-    bus.publish(bus.ACTIONS.TURN_LIGHT)
+let _turnOnLight = () => {
+    bus.publish(bus.ACTIONS.TURN_ON_LIGHT)
+};
+let _turnOffLight = () => {
+    bus.publish(bus.ACTIONS.TURN_OFF_LIGHT)
 };
 
 
@@ -121,6 +154,7 @@ let recognizeBell = (bell) => {
 };
 
 
+
 /*
     ===================================================
     챗봇
@@ -130,9 +164,12 @@ let recognizeBell = (bell) => {
 
 
 let recognizeSentence = (message) => {
-
-    _displayMessageFromOthers(message.speaker, message.content);
     let msg = message.content.toLowerCase();
+    if(msg==="social media" || msg==="cecilia"){
+        message.content="CESLeA"
+    }
+    _displayMessageFromOthers(message.speaker, message.content);
+
     return ceslea.recognizeSentence(msg)
 
 };
