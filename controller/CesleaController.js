@@ -117,7 +117,7 @@ const initialize = (server) => {
                         break;
                     case ACTIONS.INPUT_FACE:
                         let name = data.data;
-                        if (name != ceslea.personName) {
+                        if (name != ceslea.personName && ceslea.chatbot === CHATBOT.IDLE) {
                             connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "')", function (err, result, fields) {
                                 if (err) throw err;
                                 console.log(Object.values(result[0])[0])
