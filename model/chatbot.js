@@ -15,9 +15,14 @@ let englishCheckAPI = (sentence) => {
         })
 }
 
-let englishChatqAPI = (sentence) => {
-    return axios.get("http://localhost:3010/api/v1/chatbot/english/question?sentence=" + sentence)
-        .then((result) => {
+let englishChatqAPI = (sentence, line_num, quest) => {
+    return axios.get("http://localhost:3010/api/v1/chatbot/english/question", {
+        params: {
+            sentence: sentence,
+            line_num: line_num,
+            quest: quest
+        }
+    }).then((result) => {
             return result.data
         })
 }
@@ -39,9 +44,9 @@ let send = (sentence) => {
     })
 };
 
-let sendwithQ = (sentence) => {
+let sendwithQ = (sentence, line_num, quest) => {
     return new Promise((resolve, reject) => {
-        englishChatqAPI(sentence).then((result) => {
+        englishChatqAPI(sentence, line_num, quest).then((result) => {
             resolve(result)
         }).catch((err) => {
             reject(err)

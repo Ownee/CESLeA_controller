@@ -3,7 +3,7 @@ let Ceslea = require("./Ceslea");
 let chatbot = require("../model/chatbot")
 let rxmq = require('rxmq').default;
 let api = require("../api/index")
-const {CHANNEL,ACTIONS,SUBJECT} = require("./C")
+const {CHANNEL,ACTIONS,SUBJECT,CHATBOT} = require("./C")
 let mysql = require('mysql');
 
 
@@ -118,21 +118,22 @@ const initialize = (server) => {
                     case ACTIONS.INPUT_FACE:
                         let name = data.data;
                         if (name != ceslea.personName && ceslea.chatbot === CHATBOT.IDLE) {
-                            connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "')", function (err, result, fields) {
+                            connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_v2 WHERE person_name = '" + name + "')", function (err, result, fields) {
                                 if (err) throw err;
                                 console.log(Object.values(result[0])[0])
                                 if (Object.values(result[0])[0] == 1) {
-                                    connection.query("SELECT * FROM ceslea_tbl_face WHERE person_name = '" + name + "'", function (err, result, fields) {
+                                    connection.query("SELECT * FROM ceslea_tbl_v2 WHERE person_name = '" + name +  + "' ORDER BY submission_date DESC LIMIT 1", function (err, result, fields) {
                                         if (err) throw err;
                                         console.log(result[0].person_name);
                                         ceslea.personId = parseInt(result[0].person_id);
                                         ceslea.personName = name;
+                                        ceslea.line_num = parseInt(result[0].intro_index)
                                         ceslea.youAgain("youagain")
                                     });
                                 } else {
                                     if (ceslea.updateFace(name)) {
-                                        let sql = "INSERT INTO ceslea_tbl_face (person_id, person_name, summarization) VALUES (?, ?, ?)";
-                                        let sqlparams = [ceslea.personId, ceslea.personName.replace(/'/g, "\\'"), "User " + ceslea.personName.replace(/'/g, "\\'")];
+                                        let sql = "INSERT INTO ceslea_tbl_v2 (person_id, person_name, summarization, intro_index) VALUES (?, ?, ?, ?)";
+                                        let sqlparams = [ceslea.personId, ceslea.personName.replace(/'/g, "\\'"), "User " + ceslea.personName.replace(/'/g, "\\'"), ceslea.line_num];
                                         connection.query(sql, sqlparams, function (err, result) {
                                             if (err) throw err;
                                             console.log("User " + ceslea.personName + " is inserted as a new person");
@@ -146,14 +147,18 @@ const initialize = (server) => {
                         if (ceslea.personId > 0) {
                             data.data.speakerId = ceslea.personId.toString();
                             data.data.speaker = ceslea.personName;
-                            let sql = "INSERT INTO ceslea_tbl_face (person_id, summarization) VALUES (?, ?)";
-                            let sqlparams = [ceslea.personId, data.data.content.replace(/'/g, "\\'")];
+                            let sql = "INSERT INTO ceslea_tbl_v2 (person_id, summarization, intro_index) VALUES (?, ?, ?)";
+                            let sqlparams = [ceslea.personId, data.data.content.replace(/'/g, "\\'"), ceslea.line_num];
                             connection.query(sql, sqlparams, function (err, result) {
                                 if (err) throw err;
                                 console.log("Person " + ceslea.personId.toString() + " DB user input record inserted");
                             });
                         }
                         io.emit("status", data);
+                        connection.query("SELECT * FROM ceslea_tbl_face WHERE person_id=" + ceslea.personId.toString() + " ORDER BY submission_date DESC LIMIT 1", function (err, result, fields) {
+                            if (err) throw err;
+                            this.line_num = parseInt(result[0].intro_index)
+                        });
                         ceslea.updateSentence(data.data.content);
                         break;
                     default :
@@ -173,8 +178,8 @@ const initialize = (server) => {
                 switch (data.action) {
                     case ACTIONS.SPEAK_SENTENCE:
                         if (ceslea.personId > 0) {
-                            let sql = "INSERT INTO ceslea_tbl_face (person_id, summarization) VALUES (?, ?)";
-                            let sqlparams = [ceslea.personId, data.data.replace(/'/g, "\\'")];
+                            let sql = "INSERT INTO ceslea_tbl_v2 (person_id, summarization, intro_index) VALUES (?, ?, ?)";
+                            let sqlparams = [ceslea.personId, data.data.replace(/'/g, "\\'"), ceslea.line_num];
                             connection.query(sql, sqlparams, function (err, result) {
                                 if (err) throw err;
                                 console.log("Person " + ceslea.personId.toString() + " DB chatbot input record inserted");
@@ -217,7 +222,7 @@ const initialize = (server) => {
                     case ACTIONS.SHOW_SUMMARIZATION:
                         if (ceslea.personId > 0) {
                             let msg = "";
-                            connection.query("SELECT * FROM ceslea_tbl_face WHERE person_id = " + ceslea.personId.toString(), function (err, result, fields) {
+                            connection.query("SELECT * FROM ceslea_tbl_v2 WHERE person_id = " + ceslea.personId.toString(), function (err, result, fields) {
                                 if (err) throw err;
                                 console.log(result);
                                 for(var i=0;i<result.length;i++) {

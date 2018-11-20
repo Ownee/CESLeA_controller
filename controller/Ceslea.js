@@ -43,6 +43,8 @@ class Ceslea {
         this.personId = 0;
         this.lastPersonId = 0;
 
+        this.line_num = 0;
+
         this.lastTimerId = null;
 
         this.preventTimerId = null;
@@ -208,33 +210,35 @@ class Ceslea {
                 })
             } else {
                 console.log("Gesture: " + this.question_on)
+                chatbot.sendwithQ(msg, this.line_num, this.question_on)
+                    .then((result) => {
+                        let responseMsg = result.sentence;
+                        console.log(result.sess)
+                        this.line_num = parseInt(result.sess.line_num);
+                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
                 if (this.question_on) {
                     this.question_on = false;
-                    chatbot.sendwithQ(msg)
-                        .then((result) => {
-                            let responseMsg = result.sentence;
-                            console.log(result.sess)
-                            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                        })
-                        .catch((err) => {
-                            console.log(err)
-                        })
-                } else {
-                    chatbot.send(msg)
-                        .then((result) => {
-                            let responseMsg = result.sentence;
-                            console.log(result.sess)
-                            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                            if (responseMsg.includes("Thank you for using it")) {
-                                dispatch(ACTIONS.SHOW_SUMMARIZATION, responseMsg)
-                            }
-                        })
-                        .catch((err) => {
-                            console.log(err)
-                        })
                 }
+                // } else {
+                //     chatbot.send(msg)
+                //         .then((result) => {
+                //             let responseMsg = result.sentence;
+                //             console.log(result.sess)
+                //             dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                //             dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                //             if (responseMsg.includes("Thank you for using it")) {
+                //                 dispatch(ACTIONS.SHOW_SUMMARIZATION, responseMsg)
+                //             }
+                //         })
+                //         .catch((err) => {
+                //             console.log(err)
+                //         })
+                // }
             }
         } else {
             chatbot.isCeslea(msg)
