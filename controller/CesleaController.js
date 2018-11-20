@@ -7,7 +7,7 @@ const {CHANNEL,ACTIONS,SUBJECT} = require("./C")
 let mysql = require('mysql');
 
 
-
+//나중에는 여기 있는 잡다한 코드를 Ceslea.js 안에 집어넣을 방법을 찾아야 한다.
 let ceslea = null;
 
 let _dispatch = (channel, action, data) => {
@@ -120,12 +120,14 @@ const initialize = (server) => {
                         if (name != ceslea.personName) {
                             connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "')", function (err, result, fields) {
                                 if (err) throw err;
-                                if (result == 1) {
-                                    connection.query("SELECT 1 FROM ceslea_tbl_face WHERE person_name = '" + name + "'", function (err, result, fields) {
+                                console.log(Object.values(result[0])[0])
+                                if (Object.values(result[0])[0] == 1) {
+                                    connection.query("SELECT * FROM ceslea_tbl_face WHERE person_name = '" + name + "'", function (err, result, fields) {
                                         if (err) throw err;
                                         console.log(result[0].person_name);
                                         ceslea.personId = parseInt(result[0].person_id);
                                         ceslea.personName = name;
+                                        ceslea.youAgain("youagain")
                                     });
                                 } else {
                                     if (ceslea.updateFace(name)) {
@@ -224,6 +226,9 @@ const initialize = (server) => {
                                 console.log(msg);
                                 ceslea.showSummarization(msg);
                             });
+                            // connection.query("DELETE FROM ceslea_tbl_face WHERE person_id=" + ceslea.personId.toString() + " ORDER BY submission_date DESC LIMIT 1", function (err, result, fields) {
+                            //     if (err) throw err;
+                            // });
                         }
                         //console.log(msg);
                         //data.action = ACTIONS.SPEAK_SENTENCE;

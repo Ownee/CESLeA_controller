@@ -192,6 +192,16 @@ class Ceslea {
             if (msg.includes("finish")) {
                 chatbot.clear()
                     .then(() => {
+                        let responseMsg = "I will summarize our conversation. We talked about"
+                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                        dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+                        //responseMsg = "Bye. Have a nice day!"
+                        //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                        this.personId = 0;
+                        this.personName = 'Unknown';
+                        this.question_on = false;
                         this.updateSituation(SITUATION.CESLEA_ENTER_LISTENING);
                         this.chatbot = CHATBOT.IDLE;
                     }).catch((err) => {
@@ -235,6 +245,7 @@ class Ceslea {
                         let responseMsg = "Did you call me?";
                         dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                         dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                        //dispatch(ACTIONS.INPUT_FACE, this.personName)
                     } else {
                         chatbot.isTravel(msg)
                             .then((result) => {
@@ -465,36 +476,65 @@ class Ceslea {
         // uri: http://155.230.104.190:8080/articles
         // data: ["file": <SOME FILE>](only txt)
 
-        var req = request.post("http://155.230.104.190:8080/articles", function (err, resp, body) {
-            if (err) {
-                console.log('Post Error!');
-            }
-            else {
-                console.log('Post Success!');
-                let myObj = JSON.parse(body);
-                dispatch(ACTIONS.DISPLAY_SENTENCE, myObj.content)
-                //dispatch(ACTIONS.SPEAK_SENTENCE, myObj.content)
-            }
-        });
+        if (msg.length > 100) {
+            var req = request.post("http://155.230.104.190:8080/articles", function (err, resp, body) {
+                if (err) {
+                    console.log('Post Error!');
+                }
+                else {
+                    console.log('Post Success!');
+                    let myObj = JSON.parse(body);
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, myObj.content)
+                    // dispatch(ACTIONS.SPEAK_SENTENCE, myObj.content)
+                }
+            });
 
-        var form = req.form();
-        form.append('file', msg, {
-            filename: 'myfile.txt',
-            contentType: 'text/plain'
-        });
+            var form = req.form();
+            form.append('file', msg, {
+                filename: 'myfile.txt',
+                contentType: 'text/plain'
+            });
+        } else if (msg.length > 0) {
+            dispatch(ACTIONS.DISPLAY_SENTENCE, msg)
+        } else {
+            let nothingMsg = "Oh, last time we didn't talk."
+            dispatch(ACTIONS.DISPLAY_SENTENCE, nothingMsg)
+        }
     }
 
     updateFace(data) {
+        let {dispatch} = this;
         if (data == 'Unknown') {
             this.personId = 0;
             this.personName = 'Unknown';
+            let responseMsg = "Nice to meet you! Can I know your name?"
+            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+            return false;
+        } else if (data == 'None') {
+            this.personId = 0;
+            this.personName = 'Unknown';
+            //let responseMsg = "Nice to meet you! Can I know your name?"
+            //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
             return false;
         } else {
             this.lastPersonId += 1;
             this.personId = this.lastPersonId;
             this.personName = data;
+            let responseMsg = "I am glad to meet you " + this.personName + "!"
+            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
             return true;
         }
+    }
+
+    youAgain(msg) {
+        let {dispatch} = this;
+        let responseMsg = "It is good to see you again " + this.personName + "! Let me remind you our last conversation. Last time our conversation was"
+        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+        dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
     }
 
 }
