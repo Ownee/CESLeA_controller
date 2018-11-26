@@ -27,6 +27,13 @@ let englishChatqAPI = (sentence, line_num, quest) => {
         })
 }
 
+let chatbotModeAPI = (flag) => {
+    return axios.get("http://localhost:3010/api/v1/chatbot/english/flag?flag=" + flag)
+        .then((result) => {
+            return result.data
+        })
+}
+
 let englishInitAPI = () => {
     return axios.get("http://localhost:3010/api/v1/chatbot/init/english")
         .then((result) => {
@@ -47,6 +54,16 @@ let send = (sentence) => {
 let sendwithQ = (sentence, line_num, quest) => {
     return new Promise((resolve, reject) => {
         englishChatqAPI(sentence, line_num, quest).then((result) => {
+            resolve(result)
+        }).catch((err) => {
+            reject(err)
+        })
+    })
+};
+
+let chatbotMode = (flag) => {
+    return new Promise((resolve, reject) => {
+        chatbotModeAPI(flag).then((result) => {
             resolve(result)
         }).catch((err) => {
             reject(err)
@@ -99,5 +116,6 @@ module.exports = {
     clear,
     isTravel,
     isCeslea,
-    sendwithQ
+    sendwithQ,
+    chatbotMode
 }

@@ -2,6 +2,7 @@ let bus = require("../bus");
 let chatbot = require("../model/chatbot");
 let Promise = require("bluebird");
 let request = require('request');
+let opn = require('opn');
 
 
 let {ACTIONS, SITUATION, OBJECTS, PLACES, USER_ACTION, USER_INTENT, CHATBOT} = require("./C");
@@ -39,11 +40,14 @@ class Ceslea {
 
         this.question_on = false;
 
-        this.personName = 'Unknown';
+        this.personName = 'None';
         this.personId = 0;
         this.lastPersonId = 0;
-
         this.line_num = 0;
+
+        this.intro_check = 0;
+        this.action_check = 0;
+        this.whatAction == "";
 
         this.lastTimerId = null;
 
@@ -141,7 +145,7 @@ class Ceslea {
                     if (!this.preventTimerId) {
                         console.log("gesture received")
                         this.question_on = true;
-                        this.dispatch(ACTIONS.DISPLAY_SITUATION, situation);
+                        //this.dispatch(ACTIONS.DISPLAY_SITUATION, situation);
                     }
                     break;
             }
@@ -210,20 +214,78 @@ class Ceslea {
                 })
             } else {
                 console.log("Gesture: " + this.question_on)
-                chatbot.sendwithQ(msg, this.line_num, this.question_on)
-                    .then((result) => {
-                        let responseMsg = result.sentence;
-                        console.log(result.sess)
-                        this.line_num = parseInt(result.sess.line_num);
-                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                    })
-                    .catch((err) => {
-                        console.log(err)
-                    })
-                if (this.question_on) {
-                    this.question_on = false;
+                if (this.intro_check == 1) {
+                    let responseMsg = "I didn't finish my introduction from our last meeting. Do you want to listen more?";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    this.intro_check = 3;
+                } else if (this.intro_check == 2) {
+                    let responseMsg = "I finished my introduction from our previous meeting. However, do you want to listen again?";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    this.intro_check = 3;
+                } else if (this.intro_check == 3 && (_msg.includes('yes') || _msg.includes('ok') || _msg.includes('sure') || _msg.includes('course'))) {
+                    this.intro_check = 0;
+                    dispatch(ACTIONS.CHANGE_MODE_INTRO, msg)
+                    let responseMsg = "OK! Can I continue my introduction?";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    // chatbot.sendwithQ(msg, this.line_num, this.question_on)
+                    //     .then((result) => {
+                    //         let responseMsg = result.sentence;
+                    //         console.log(result.sess)
+                    //         this.line_num = parseInt(result.sess.line_num);
+                    //         dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    //         dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    //     })
+                    //     .catch((err) => {
+                    //         console.log(err)
+                    //     })
+                } else if (this.intro_check == 3 && (_msg.includes('no') || _msg.includes('never') || _msg.includes("don't") || _msg.includes('not'))) {
+                    this.intro_check = 0;
+                    dispatch(ACTIONS.CHANGE_MODE_CHITCHAT, msg)
+                    let responseMsg = "OK! We can have another conversation.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else if (this.action_check == 1 && (_msg.includes('yes') || _msg.includes('ok') || _msg.includes('sure') || _msg.includes('course'))) {
+                    this.action_check = 0;
+                    let responseMsg = "OK! I will show you some video.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    opn("https://www.youtube.com/results?search_query=" + this.whatAction);
+                    // chatbot.sendwithQ(msg, this.line_num, this.question_on)
+                    //     .then((result) => {
+                    //         let responseMsg = result.sentence;
+                    //         console.log(result.sess)
+                    //         this.line_num = parseInt(result.sess.line_num);
+                    //         dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    //         dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    //     })
+                    //     .catch((err) => {
+                    //         console.log(err)
+                    //     })
+                } else if (this.action_check == 1 && (_msg.includes('no') || _msg.includes('never') || _msg.includes("don't") || _msg.includes('not'))) {
+                    this.action_check = 0;
+                    let responseMsg = "OK, Never mind.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else {
+                    chatbot.sendwithQ(msg, this.line_num, this.question_on)
+                        .then((result) => {
+                            let responseMsg = result.sentence;
+                            console.log(result.sess)
+                            this.line_num = parseInt(result.sess.line_num);
+                            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                        })
+                        .catch((err) => {
+                            console.log(err)
+                        })
+                    if (this.question_on) {
+                        this.question_on = false;
+                    }
                 }
+
                 // } else {
                 //     chatbot.send(msg)
                 //         .then((result) => {
@@ -293,6 +355,7 @@ class Ceslea {
     }
 
     updateIntent(intent) {
+        let {dispatch} = this;
         this.dispatch(ACTIONS.DISPLAY_INTENT, intent.intent);
 
         this.state = Object.assign({}, this.state, {
@@ -305,6 +368,14 @@ class Ceslea {
             }, err => {
 
             });
+
+        // if (this.action_check == 0 && this.chatbot === CHATBOT.ACTIVE && intent.intent != 'None' && intent.intent != 'Nothing') {
+        //     this.action_check = 1;
+        //     this.whatAction = intent.intent;
+        //     let responseMsg = "You look interested in " + this.whatAction + ". Do you want to see a related video?";
+        //     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+        //     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+        // }
     }
 
 
@@ -517,7 +588,7 @@ class Ceslea {
             return false;
         } else if (data == 'None') {
             this.personId = 0;
-            this.personName = 'Unknown';
+            this.personName = 'None';
             //let responseMsg = "Nice to meet you! Can I know your name?"
             //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
             //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)

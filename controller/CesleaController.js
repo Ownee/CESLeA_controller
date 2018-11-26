@@ -3,8 +3,9 @@ let Ceslea = require("./Ceslea");
 let chatbot = require("../model/chatbot")
 let rxmq = require('rxmq').default;
 let api = require("../api/index")
-const {CHANNEL,ACTIONS,SUBJECT,CHATBOT} = require("./C")
+const {CHANNEL,ACTIONS,SUBJECT,CHATBOT,CHAT_MODULE_STATE} = require("./C")
 let mysql = require('mysql');
+let opn = require('opn');
 
 
 //나중에는 여기 있는 잡다한 코드를 Ceslea.js 안에 집어넣을 방법을 찾아야 한다.
@@ -37,6 +38,12 @@ let dispatch = (action, data) => {
                 _dispatch(CHANNEL.INPUT, action, data);
                 break;
             case ACTIONS.INPUT_FACE:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.CHANGE_MODE_INTRO:
+                _dispatch(CHANNEL.INPUT, action, data);
+                break;
+            case ACTIONS.CHANGE_MODE_CHITCHAT:
                 _dispatch(CHANNEL.INPUT, action, data);
                 break;
             case ACTIONS.DISPLAY_ACTION:
@@ -96,8 +103,20 @@ const initialize = (server) => {
     });
 
     connection.connect();
-
+    opn('http://localhost:3004');
     //connection.query("DELETE FROM ceslea_tbl_face");
+    connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_v2 WHERE person_id = 1)", function (err, result, fields) {
+        if (err) throw err;
+        console.log(Object.values(result[0])[0])
+        if (Object.values(result[0])[0] == 1) {
+            connection.query("SELECT * FROM ceslea_tbl_v2 ORDER BY person_id DESC LIMIT 1", function (err, result, fields) {
+                console.log("Last person ID: " + result[0].person_id)
+                if (err) throw err;
+                ceslea.lastPersonId = parseInt(result[0].person_id)
+            });
+        }
+    });
+
 
     rxmq.channel(CHANNEL.INPUT).observe(SUBJECT.DATA)
         .subscribe(
@@ -117,7 +136,7 @@ const initialize = (server) => {
                         break;
                     case ACTIONS.INPUT_FACE:
                         let name = data.data;
-                        if (name != ceslea.personName && ceslea.chatbot === CHATBOT.IDLE) {
+                        if (name != ceslea.personName && ceslea.chatbot === CHATBOT.IDLE && (ceslea.personName == 'None' || ceslea.personName == 'Unknown' || name == 'None')) {
                             connection.query("SELECT EXISTS(SELECT 1 FROM ceslea_tbl_v2 WHERE person_name = '" + name + "')", function (err, result, fields) {
                                 if (err) throw err;
                                 console.log(Object.values(result[0])[0])
@@ -129,9 +148,17 @@ const initialize = (server) => {
                                         ceslea.personName = name;
                                         connection.query("SELECT * FROM ceslea_tbl_v2 WHERE person_id=" + ceslea.personId.toString() + " ORDER BY submission_date DESC LIMIT 1", function (err, result, fields) {
                                             if (err) throw err;
+                                            console.log(result[0].intro_index)
                                             ceslea.line_num = parseInt(result[0].intro_index)
+                                            console.log(ceslea.line_num)
+                                            if (ceslea.line_num >= 34) {
+                                                ceslea.intro_check = 2;
+                                            } else {
+                                                ceslea.intro_check = 1;
+                                            }
                                         });
-                                        ceslea.youAgain("youagain")
+                                        //chatbot.chatbotMode(CHAT_MODULE_STATE.SELFINTRO)
+                                        ceslea.youAgain("youagain");
                                     });
                                 } else {
                                     if (ceslea.updateFace(name)) {
@@ -163,6 +190,12 @@ const initialize = (server) => {
                         }
                         io.emit("status", data);
                         ceslea.updateSentence(data.data.content);
+                        break;
+                    case ACTIONS.CHANGE_MODE_INTRO:
+                        chatbot.chatbotMode(CHAT_MODULE_STATE.SELFINTRO)
+                        break;
+                    case ACTIONS.CHANGE_MODE_CHITCHAT:
+                        chatbot.chatbotMode(CHAT_MODULE_STATE.CHITCHAT)
                         break;
                     default :
                         break;
