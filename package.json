@@ -12,6 +12,7 @@
     "cors": "^2.8.4",
     "debug": "~2.6.9",
     "express": "~4.16.0",
+    "grpc": "^1.16.1",
     "http-errors": "~1.6.2",
     "jade": "~1.11.0",
     "morgan": "~1.9.0",
@@ -20,9 +21,20 @@
     "opn": "^5.4.0",
     "querystring": "^0.2.0",
     "request": "^2.88.0",
+    "robotjs": "0.6.0",
     "rxjs": "^6.2.0",
     "rxmq": "^1.2.0",
     "socket.io": "^2.1.0",
     "type-check": "^0.3.2"
-  }
+  },
+  "description": "ceslea_main_controller",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://knu_homs44@bitbucket.org/knu_abr/ceslea_main_controller.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/knu_abr/ceslea_main_controller#readme"
 }

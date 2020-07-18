@@ -17,16 +17,21 @@ const ACTIONS = {
     TURN_OFF_LIGHT: "TURN_OFF_LIGHT",
 
     RESTART_SPEECH_RECOGNITION: "RESTART_SPEECH_RECOGNITION",
+
     SHOW_SUMMARIZATION: "SHOW_SUMMARIZATION",
     INPUT_FACE: "INPUT_FACE",
     CHANGE_MODE_INTRO: "CHANGE_MODE_INTRO",
     CHANGE_MODE_CHITCHAT: "CHANGE_MODE_CHITCHAT",
+    CHANGE_MODE_MAX: "CHANGE_MODE_MAX",
+    CHANGE_MODE_SEMI: "CHANGE_MODE_SEMI",
+    CLEANSING_DB: "CLEANSING_DB:",
 };
 
 const USER_INTENT = {
     SEARCHING_FOR_SOMETHING: "Searching for something",
     CLEANING_ROOM: "Cleaning",
-    READING_A_BOOK: "Reading"
+    READING_A_BOOK: "Reading",
+    FINISH_READING: "a person finished reading."
 };
 
 const USER_ACTION = {
@@ -35,6 +40,18 @@ const USER_ACTION = {
     SIT: "Sit",
     Q_ON: "{\"question_on\": true}",
     Q_OFF: "{\"question_on\": false}",
+    Swiping_Right: "Hue_OFF_2_144_Swiping Right",
+    Swiping_Left: "Hue_OFF_2_144_Swiping Left",
+    Stop: "Hue_OFF_3_144_Stop Sign",
+    Keep_Going: "Hue_ON_3_144_Rolling Hand Backward",
+
+    COMING: "coming",
+    SITTING: "sitting",
+    READING: "reading",
+    STRETCHING: "stretching",
+    BRUSHING: "brushing",
+    LEAVING: "leaving",
+    PLAYING: "playing instrument"
 };
 
 
@@ -169,13 +186,16 @@ const CHATBOT = {
     ACTIVE: "ACTIVE",
     IDLE: "IDLE",
     EXTRA_FINDING: "EXTRA_FINDING",
+    FACE: "FACE",
 }
 
 const CHAT_MODULE_STATE = {
     CHITCHAT: 0,
     GAG: 1,
     TRAVEL: 2,
-    SELFINTRO: 3
+    SELFINTRO: 3,
+    MAX: 4,
+    SEMI: 5,
 };
 
 module.exports= {

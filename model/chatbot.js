@@ -27,6 +27,17 @@ let englishChatqAPI = (sentence, line_num, quest) => {
         })
 }
 
+let englishChatVoiceAPI = (sentence) => {
+    console.log(sentence)
+    return axios.get("http://192.168.0.114:5000/tts", {
+        params: {
+            text: sentence
+        }
+    }).then((result) => {
+        return result.data
+    })
+}
+
 let chatbotModeAPI = (flag) => {
     return axios.get("http://localhost:3010/api/v1/chatbot/english/flag?flag=" + flag)
         .then((result) => {
@@ -61,6 +72,16 @@ let sendwithQ = (sentence, line_num, quest) => {
     })
 };
 
+let sendvoice = (sentence) => {
+    return new Promise((resolve, reject) => {
+        englishChatVoiceAPI(sentence).then((result) => {
+            resolve(result)
+        }).catch((err) => {
+            reject(err)
+        })
+    })
+};
+
 let chatbotMode = (flag) => {
     return new Promise((resolve, reject) => {
         chatbotModeAPI(flag).then((result) => {
@@ -85,7 +106,7 @@ let clear = () => {
 let isCeslea = (sentence)=>{
     return new Promise((resolve, reject) => {
         let _sentence = sentence.toLowerCase();
-        if (_sentence.includes("ceslea")||_sentence.includes("cecilia")||_sentence.includes("social media")) {
+        if (_sentence.includes("a i deck")||_sentence.includes("ai deck")||_sentence.includes("ceslea")||_sentence.includes("cecilia")||_sentence.includes("social media")) {
             resolve(true)
         } else {
             resolve(false)
@@ -117,5 +138,6 @@ module.exports = {
     isTravel,
     isCeslea,
     sendwithQ,
-    chatbotMode
+    chatbotMode,
+    sendvoice
 }

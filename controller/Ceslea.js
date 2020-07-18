@@ -3,9 +3,9 @@ let chatbot = require("../model/chatbot");
 let Promise = require("bluebird");
 let request = require('request');
 let opn = require('opn');
+let robot = require("robotjs");
 
-
-let {ACTIONS, SITUATION, OBJECTS, PLACES, USER_ACTION, USER_INTENT, CHATBOT} = require("./C");
+let {ACTIONS, SITUATION, OBJECTS, PLACES, USER_ACTION, USER_INTENT, CHATBOT, CHAT_MODULE_STATE} = require("./C");
 let {Subject, Observable} = require("rxjs");
 let {merge} = require("rxjs/operators");
 require("rxjs/Rx");
@@ -39,15 +39,32 @@ class Ceslea {
         this.chatbot = CHATBOT.IDLE;
 
         this.question_on = false;
+        this.summary_on = false;
+        this.text_on = false;
 
+        this.faceInput = 'None';
         this.personName = 'None';
+        this.theName = 'Mr.Who';
+
         this.personId = 0;
         this.lastPersonId = 0;
         this.line_num = 0;
+        this.self_check = false;
 
         this.intro_check = 0;
         this.action_check = 0;
-        this.whatAction == "";
+        this.face_new_check = 0;
+
+        this.whatAction = "";
+        this.abstraction_check = 0;
+        this.finish_check = 0;
+        this.info_check = false;
+
+        this.face_restart = false;
+
+        this.textStack = " ";
+
+        this.chatmode = 'max'
 
         this.lastTimerId = null;
 
@@ -167,10 +184,17 @@ class Ceslea {
         }, 60000)
     };
 
-    updateSentence(msg) {
+    updateSentence(msg,chatMode) {
+
         let _msg = (msg || "").toLowerCase();
         let {dispatch} = this;
         this.updateTimer();
+
+        if(chatMode==='semi' && this.chatmode === 'max' ){
+            dispatch(ACTIONS.CHANGE_MODE_SEMI, msg)
+        }else if(chatMode==="max" && this.chatmode === 'semi' ){
+            dispatch(ACTIONS.CHANGE_MODE_MAX, msg)
+        }
 
         if (this.chatbot === CHATBOT.EXTRA_FINDING) {
             let temp = this.objects.find((item) => {
@@ -195,41 +219,123 @@ class Ceslea {
             }
 
         } else if (this.chatbot === CHATBOT.ACTIVE) {
-            if (msg.includes("finish")) {
+            if (_msg === "끝내기") {
                 chatbot.clear()
                     .then(() => {
-                        let responseMsg = "I will summarize our conversation. We talked about"
-                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                        dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+                        if (this.summary_on) {
+                            let responseMsg = "그러면 저희 대화를 요약해보겠습니다."
+                            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                            dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+                        } else {
+                            let responseMsg = "그럼 안녕."
+                            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                            dispatch(ACTIONS.CLEANSING_DB, "BOOM")
+                        }
                         //responseMsg = "Bye. Have a nice day!"
                         //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                         //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                        this.personId = 0;
-                        this.personName = 'Unknown';
-                        this.question_on = false;
                         this.updateSituation(SITUATION.CESLEA_ENTER_LISTENING);
                         this.chatbot = CHATBOT.IDLE;
+
+                        this.question_on = false;
+                        this.summary_on = false;
+
+                        this.faceInput = 'None';
+                        this.personName = 'None';
+                        this.theName = 'Mr.Who';
+
+                        this.personId = 0;
+                        this.lastPersonId = 0;
+                        this.line_num = 0;
+                        this.self_check = false;
+                        this.info_check = false;
+
+                        this.intro_check = 0;
+                        this.action_check = 0;
+                        this.face_new_check = 0;
+
+                        this.whatAction = "";
+                        this.abstraction_check = 0;
+                        this.finish_check = 0;
+
+                        this.face_restart = false;
                     }).catch((err) => {
                 })
             } else {
                 console.log("Gesture: " + this.question_on)
-                if (this.intro_check == 1) {
-                    let responseMsg = "I didn't finish my introduction from our last meeting. Do you want to listen more?";
+                if (this.finish_check == 1 && (_msg.includes('아니') || _msg.includes('싫어') || _msg.includes("아뇨") || _msg.includes('않') || _msg.includes("그만"))) {
+                    this.finish_check = 0;
+                    let responseMsg = "OK! Please concentrate on me.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else if (this.finish_check == 1 && (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연'))) {
+                    this.finish_check = 0;
+                    chatbot.clear()
+                        .then(() => {
+                            if (this.summary_on) {
+                                let responseMsg = "그러면 저희 대화를 요약해보겠습니다."
+                                dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                                dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                                dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+                            } else {
+                                let responseMsg = "OK, bye."
+                                dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                                dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                                dispatch(ACTIONS.CLEANSING_DB, "BOOM")
+                            }
+                            //responseMsg = "Bye. Have a nice day!"
+                            //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                            //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                            this.updateSituation(SITUATION.CESLEA_ENTER_LISTENING);
+                            this.chatbot = CHATBOT.IDLE;
+
+                            this.question_on = false;
+                            this.summary_on = false;
+
+                            this.faceInput = 'None';
+                            this.personName = 'None';
+                            this.theName = 'Mr.Who';
+
+                            this.personId = 0;
+                            this.lastPersonId = 0;
+                            this.line_num = 0;
+                            this.self_check = false;
+                            this.info_check = false;
+
+                            this.intro_check = 0;
+                            this.action_check = 0;
+                            this.face_new_check = 0;
+
+                            this.whatAction == "";
+                            this.abstraction_check = 0;
+                            this.finish_check = 0;
+
+                            this.face_restart = false;
+                        }).catch((err) => {
+                    })
+                } else if (this.abstraction_check == 1 && (_msg.includes('아니') || _msg.includes('싫어') || _msg.includes("아뇨") || _msg.includes('않') || _msg.includes("그만"))) {
+                    this.abstraction_check = 0;
+                    let responseMsg = "OK! We can have another conversation.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else if (this.abstraction_check == 1 && (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연'))) {
+                    this.abstraction_check = 0;
+                    dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+                    let responseMsg = "This is the summary of our last conversation. Let's continue to another conversation.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else if (this.intro_check == 1) {
+                    let responseMsg = "지난번에 제 소개를 덜 했는데 더 들으실래요?";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                     this.intro_check = 3;
                 } else if (this.intro_check == 2) {
-                    let responseMsg = "I finished my introduction from our previous meeting. However, do you want to listen again?";
+                    let responseMsg = "지난번에 제 소개는 끝냈습니다만, 다시 들으실래요?";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                     this.intro_check = 3;
-                } else if (this.intro_check == 3 && (_msg.includes('yes') || _msg.includes('ok') || _msg.includes('sure') || _msg.includes('course'))) {
-                    this.intro_check = 0;
-                    dispatch(ACTIONS.CHANGE_MODE_INTRO, msg)
-                    let responseMsg = "OK! Can I continue my introduction?";
-                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                     // chatbot.sendwithQ(msg, this.line_num, this.question_on)
                     //     .then((result) => {
                     //         let responseMsg = result.sentence;
@@ -241,13 +347,13 @@ class Ceslea {
                     //     .catch((err) => {
                     //         console.log(err)
                     //     })
-                } else if (this.intro_check == 3 && (_msg.includes('no') || _msg.includes('never') || _msg.includes("don't") || _msg.includes('not'))) {
+                } else if (this.intro_check == 3 && (_msg.includes('아니') || _msg.includes('싫어') || _msg.includes("아뇨") || _msg.includes('않') || _msg.includes("그만"))) {
                     this.intro_check = 0;
                     dispatch(ACTIONS.CHANGE_MODE_CHITCHAT, msg)
-                    let responseMsg = "OK! We can have another conversation.";
+                    let responseMsg = "네 그러면 다른 주제로 이야기하죠.";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                } else if (this.action_check == 1 && (_msg.includes('yes') || _msg.includes('ok') || _msg.includes('sure') || _msg.includes('course'))) {
+                } else if (this.action_check == 1 && (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연'))) {
                     this.action_check = 0;
                     let responseMsg = "OK! I will show you some video.";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
@@ -264,19 +370,58 @@ class Ceslea {
                     //     .catch((err) => {
                     //         console.log(err)
                     //     })
-                } else if (this.action_check == 1 && (_msg.includes('no') || _msg.includes('never') || _msg.includes("don't") || _msg.includes('not'))) {
+                } else if (this.action_check == 1 && (_msg.includes('아니') || _msg.includes('싫어') || _msg.includes("아뇨") || _msg.includes('않') || _msg.includes("그만"))) {
                     this.action_check = 0;
                     let responseMsg = "OK, Never mind.";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                } else if (this.info_check === true && !_msg.includes("다음") && !_msg.includes("video")) {
+                    let responseMsg = "대화를 계속하시려면 '다음'이라고 말해주세요.";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                // } else if (this.state[STATE_KEYS.ACTION] === 'stretching') {
+                //     let responseMsg = "피곤하시면 잠깐 휴식을 취하시는게 어떤가요.";
+                //     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                //     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                 } else {
+                    if (this.intro_check == 3 && (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연'))) {
+                        this.intro_check = 0;
+                        // dispatch(ACTIONS.CHANGE_MODE_INTRO, msg)
+                        dispatch(ACTIONS.CHANGE_MODE_CHITCHAT, msg)
+                        let responseMsg = "죄송해요 지금은 자기 소개를 못합니다. 다른 주제로 이야기하죠.";
+                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    }
+                    if (this.info_check === true && _msg.includes("다음")) {
+                        robot.keyTap("9", "control");
+                        robot.keyTap("w", "control");
+                        this.info_check = false;
+                    }
+                    // let responseMsg = msg;
+                    // dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    // dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                     chatbot.sendwithQ(msg, this.line_num, this.question_on)
                         .then((result) => {
                             let responseMsg = result.sentence;
                             console.log(result.sess)
+                            this.info_check = JSON.parse(result.sess.event_flag);
                             this.line_num = parseInt(result.sess.line_num);
+                            if (this.line_num >= 0) {
+                                this.summary_on = true;
+                            }
+                            if (parseInt(result.sess.state) == CHAT_MODULE_STATE.SELFINTRO) {
+                                this.self_check = true;
+                            } else {
+                                this.self_check = false;
+                            }
+                            if (responseMsg.includes("continue to another conversation.")) {
+                                responseMsg = responseMsg + " 그러면 저희 대화를 요약해보겠습니다."
+                            }
                             dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                             dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                            if (responseMsg.includes("다른 주제로 이야기하죠")) {
+                                dispatch(ACTIONS.SHOW_SUMMARIZATION, msg);
+                            }
                         })
                         .catch((err) => {
                             console.log(err)
@@ -302,16 +447,101 @@ class Ceslea {
                 //         })
                 // }
             }
+        } else if (this.chatbot === CHATBOT.FACE) {
+            if (msg.includes("끝내기")) {
+                chatbot.clear()
+                    .then(() => {
+                        this.updateSituation(SITUATION.CESLEA_ENTER_LISTENING);
+                        this.chatbot = CHATBOT.IDLE;
+
+                        this.question_on = false;
+                        this.summary_on = false;
+
+                        this.faceInput = 'None';
+                        this.personName = 'None';
+                        this.theName = 'Mr.Who';
+
+                        this.personId = 0;
+                        this.lastPersonId = 0;
+                        this.line_num = 0;
+                        this.self_check = false;
+                        this.info_check = false;
+
+                        this.intro_check = 0;
+                        this.action_check = 0;
+                        this.face_new_check = 0;
+
+                        this.whatAction = "";
+                        this.abstraction_check = 0;
+                        this.finish_check = 0;
+
+                        this.face_restart = false;
+                    }).catch((err) => {
+                })
+            } else if (this.personName === 'Unknown') {
+                if (this.face_new_check === 0) {
+                    this.theName = _msg.split(' ').pop();
+                    console.log(this.theName)
+                    let responseMsg = "성함이 " + this.theName + ", 맞나요?";
+                    dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                    dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    this.face_new_check = 1;
+                } else if (this.face_new_check === 1) {
+                    if (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연')) {
+                        var req = request.get("http://192.168.0.3:3004/regist?name=" + this.theName, function (err, res, body) {
+                            if (err) {
+                                console.log('Face name send Error!');
+                            }
+                            else {
+                                console.log('Face name send Success!');
+                                console.log(body);
+                                dispatch(ACTIONS.INPUT_FACE, body)
+                            }
+                        });
+                    } else {
+                        let responseMsg = "죄송하지만 성함을 다시 한 번 말씀해주시겠어요?"
+                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+                    }
+                    this.face_new_check = 0;
+                } else {
+
+                }
+                // var req = request.get("http://192.168.0.3:3004/process_enroll", function (err, res, body) {
+                //     if (err) {
+                //         console.log('Face enroll Error!');
+                //     }
+                //     else {
+                //         console.log('Face enroll Success!');
+                //         console.log(body);
+                //         dispatch(ACTIONS.INPUT_FACE, body)
+                //     }
+                // });
+            }
         } else {
             chatbot.isCeslea(msg)
                 .then((result) => {
                     if (result) {
-                        this.chatbot = CHATBOT.ACTIVE;
+                        this.chatbot =  CHATBOT.FACE; //CHATBOT.FACE;
                         this.updateSituation(SITUATION.THEY_CALL_CESLEA);
-                        let responseMsg = "Did you call me?";
-                        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-                        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-                        //dispatch(ACTIONS.INPUT_FACE, this.personName)
+                        // let responseMsg = "Did you call me?";
+                        // dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+                        // dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+
+                        // this.personName = "Juhee"
+                        // dispatch(ACTIONS.INPUT_FACE, this.personName)
+                        // VERY IMPORTANT FACE USAGE (UP OR DOWN)
+                        var req = request.get("http://192.168.0.22:3004/sendagain", function (err, res, body) {
+                            if (err) {
+                                console.log('Face sendagain Error!');
+                            }
+                            else {
+                                console.log('Face sendagain Success!');
+                                console.log(body);
+                                dispatch(ACTIONS.INPUT_FACE, body)
+                            }
+                        });
+
                     } else {
                         chatbot.isTravel(msg)
                             .then((result) => {
@@ -340,7 +570,9 @@ class Ceslea {
 
 
     updateAction(action) {
-        this.dispatch(ACTIONS.DISPLAY_ACTION, action.action);
+        if (action.action != USER_ACTION.Q_ON && action.action != USER_ACTION.Q_OFF) {
+            this.dispatch(ACTIONS.DISPLAY_ACTION, action.action);
+        }
 
         this.state = Object.assign({}, this.state, {
             [STATE_KEYS.ACTION]: action.action
@@ -376,6 +608,10 @@ class Ceslea {
         //     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
         //     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
         // }
+
+        setTimeout(function(point) {
+            point.dispatch(ACTIONS.DISPLAY_INTENT, "None");
+        }, 6000, this);
     }
 
 
@@ -397,7 +633,7 @@ class Ceslea {
                 this.objects.push(obj)
             }
 
-            if (obj.personId === 1) {
+            if (obj.personId === 0) { //1
                 //주인
                 this.state = Object.assign({}, this.state, {
                     [STATE_KEYS.OWNER]: obj.personId,
@@ -465,6 +701,23 @@ class Ceslea {
                 //청소 중
                 observer.next(SITUATION.CLEANING)
 
+            } else if (newState[STATE_KEYS.ACTION] === USER_ACTION.STRETCHING) {
+
+
+            } else if (newState[STATE_KEYS.ACTION] === USER_ACTION.READING) {
+                //책읽기
+                //Hue
+                console.log('들어오긴했다')
+                var huereq = request.get("http://192.168.0.43:5001/light/on", function (err, resp, body) {
+                    if (err) {
+                        console.log('Hue Error!');
+                    } else {
+                        console.log('Hue On!');
+                    }
+                });
+
+                observer.next(SITUATION.READING_BOOK)
+
             } else if (newState[STATE_KEYS.INTENT] === USER_INTENT.READING_A_BOOK) {
                 //책 읽음
                 observer.next(SITUATION.READING_BOOK)
@@ -497,6 +750,16 @@ class Ceslea {
             } else if (newState[STATE_KEYS.ACTION] === USER_ACTION.Q_OFF) {
                 //question on
                 //this.question_on = false;
+            } else if ((newState[STATE_KEYS.ACTION] === USER_ACTION.Swiping_Right || newState[STATE_KEYS.ACTION] === USER_ACTION.Swiping_Left) && this.info_check === true) {
+                robot.keyTap("9", "control");
+                robot.keyTap("w", "control");
+                this.info_check = false;
+            } else if (newState[STATE_KEYS.ACTION] === USER_ACTION.Stop && this.info_check === true) {
+                robot.keyTap("9", "control");
+                robot.keyTap("space");
+            } else if (newState[STATE_KEYS.ACTION] === USER_ACTION.Keep_Going && this.info_check === true) {
+                robot.keyTap("9", "control");
+                robot.keyTap("space");
             }
         });
     }
@@ -551,65 +814,143 @@ class Ceslea {
         // uri: http://155.230.104.190:8080/articles
         // data: ["file": <SOME FILE>](only txt)
 
-        if (msg.length > 100) {
-            var req = request.post("http://155.230.104.190:8080/articles", function (err, resp, body) {
+        if (msg.length > 0) {
+
+            var req = request.post("https://chat.neoali.com:8072/translate",{form:{String:msg, ori:'kr', tar:'en'}}, function (err, resp, body) {
                 if (err) {
                     console.log('Post Error!');
                 }
                 else {
                     console.log('Post Success!');
-                    let myObj = JSON.parse(body);
-                    dispatch(ACTIONS.DISPLAY_SENTENCE, myObj.content)
-                    // dispatch(ACTIONS.SPEAK_SENTENCE, myObj.content)
+                    console.log(body);
+                    let enmsg = body; //JSON.parse(body);
+                    var req2 = request.post("https://chat.neoali.com:8072/summary_short",{form:{String:enmsg}}, function (err, resp, body) {
+                        if (err) {
+                            console.log('Post Error!');
+                        }
+                        else {
+                            console.log('Post Success!');
+                            console.log(body);
+                            let abstra = body; //JSON.parse(body);
+                            var req3 = request.post("https://chat.neoali.com:8072/translate",{form:{String:abstra, ori:'en', tar:'kr'}}, function (err, resp, body) {
+                                if (err) {
+                                    console.log('Post Error!');
+                                }
+                                else {
+                                    console.log('Post Success!');
+                                    console.log(body);
+                                    let myObj = JSON.parse(body);
+                                    console.log(myObj);
+                                    let myObj2 = myObj[0][0]
+                                    console.log(myObj2);
+                                    dispatch(ACTIONS.DISPLAY_SENTENCE, myObj2) //.replace(/yes/g,"").replace(/no/g,"").replace(/\\/g,""))
+                                    // dispatch(ACTIONS.SPEAK_SENTENCE, myObj.content)
+                                }
+                            });
+                        }
+                    });
                 }
             });
 
-            var form = req.form();
-            form.append('file', msg, {
-                filename: 'myfile.txt',
-                contentType: 'text/plain'
-            });
-        } else if (msg.length > 0) {
-            dispatch(ACTIONS.DISPLAY_SENTENCE, msg)
+
+
+            // var form = req.form();
+
+            // form.append('file', msg, {
+            //     filename: 'myfile.txt',
+            //     contentType: 'text/plain'
+            // });
+        // } else if (msg.length > 0) {
+        //     dispatch(ACTIONS.DISPLAY_SENTENCE, msg.replace(/yes/g,"").replace(/no/g,"").replace(/\\/g,""))
         } else {
-            let nothingMsg = "Oh, last time we didn't talk."
+            let nothingMsg = "우리 아무말도 안했었군요."
             dispatch(ACTIONS.DISPLAY_SENTENCE, nothingMsg)
         }
     }
 
     updateFace(data) {
         let {dispatch} = this;
-        if (data == 'Unknown') {
+        if (data == 'Unknown' || data.includes('Recog')) {
             this.personId = 0;
             this.personName = 'Unknown';
-            let responseMsg = "Nice to meet you! Can I know your name?"
+            let responseMsg = "처음뵙겠습니다! 성함이 어떻게 되시죠?"
             dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
             dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
             return false;
         } else if (data == 'None') {
             this.personId = 0;
             this.personName = 'None';
-            //let responseMsg = "Nice to meet you! Can I know your name?"
-            //dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-            //dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+            // let responseMsg = "Please stand in front of the camera and call my name CESLeA."
+            // dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            // dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
             return false;
         } else {
+            this.chatbot = CHATBOT.ACTIVE;
             this.lastPersonId += 1;
             this.personId = this.lastPersonId;
             this.personName = data;
-            let responseMsg = "I am glad to meet you " + this.personName + "!"
+
+            this.question_on = false;
+            this.summary_on = false;
+
+            this.line_num = 0;
+            this.self_check = false;
+            this.info_check = false;
+
+            this.intro_check = 0;
+            this.action_check = 0;
+            this.face_new_check = 0;
+
+            this.whatAction = "";
+            this.abstraction_check = 0;
+            this.finish_check = 0;
+
+            let responseMsg = "만나서 반갑습니다 " + this.personName + " 님!"
             dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
             dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+            // dispatch(ACTIONS.INPUT_SENTENCE,"Hello")
+            return true;
+        }
+    }
+
+    updateFaceCheckOnly(data) {
+        let {dispatch} = this;
+        if (data == 'Unknown' || data.includes('Recog')) {
+            this.personId = 0;
+            this.personName = 'Unknown';
+            return false;
+        } else if (data == 'None') {
+            this.personId = 0;
+            this.personName = 'None';
+            return false;
+        } else {
+
             return true;
         }
     }
 
     youAgain(msg) {
+        this.chatbot = CHATBOT.ACTIVE;
         let {dispatch} = this;
-        let responseMsg = "It is good to see you again " + this.personName + "! Let me remind you our last conversation. Last time our conversation was"
-        dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
-        dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
-        dispatch(ACTIONS.SHOW_SUMMARIZATION, msg)
+        if (this.line_num >= 5) {
+            let responseMsg = "다시보니 반갑네요 " + this.personName + "님! 지난 대화를 요약할까요?"
+            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+            this.abstraction_check = 1;
+        } else {
+            let responseMsg = "다시보니 반갑네요 " + this.personName + "님!"
+            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+        }
+    }
+
+    willYouFinish() {
+        if (this.personName != this.faceInput) {
+            let responseMsg = "Will you finish?"
+            dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
+            dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
+            this.finish_check = 1;
+        }
     }
 
 }
