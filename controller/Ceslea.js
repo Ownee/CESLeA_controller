@@ -481,14 +481,28 @@ class Ceslea {
             } else if (this.personName === 'Unknown') {
                 if (this.face_new_check === 0) {
                     this.theName = _msg.split(' ').pop();
+                    //var self = this;
+                    var req = request.post("https://chat.neoali.com:8072/translate",{form:{String:this.theName, ori:'kr', tar:'en'}}, function (err, resp, body) {
+                        if (err) {
+                            console.log('Post Error!');
+                        } else {
+                            console.log('Post Success!');
+                            console.log(body);
+                            let myObj = JSON.parse(body);
+                            console.log(myObj);
+                            let myObj2 = myObj[0][0]
+                            console.log(myObj2);
+                            this.theName = myObj2; //JSON.parse(body);
+                        }
+                    }.bind(this))
                     console.log(this.theName)
                     let responseMsg = "성함이 " + this.theName + ", 맞나요?";
                     dispatch(ACTIONS.DISPLAY_SENTENCE, responseMsg)
                     dispatch(ACTIONS.SPEAK_SENTENCE, responseMsg)
                     this.face_new_check = 1;
                 } else if (this.face_new_check === 1) {
-                    if (_msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연')) {
-                        var req = request.get("http://192.168.0.3:3004/regist?name=" + this.theName, function (err, res, body) {
+                    if (_msg.includes('맞아') || _msg.includes('응') || _msg.includes('그래') || _msg.includes('예') || _msg.includes('네') || _msg.includes('좋') || _msg.includes('당연')) {
+                        var req = request.get("http://192.168.0.22:3004/regist?name=" + this.theName, function (err, res, body) {
                             if (err) {
                                 console.log('Face name send Error!');
                             }

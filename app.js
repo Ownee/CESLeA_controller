@@ -13,6 +13,7 @@ let mysql = require('mysql');
 
 let app = express();
 
+/*
 let connection = mysql.createConnection({
     host     : 'localhost',
     user     : 'root',
@@ -21,6 +22,7 @@ let connection = mysql.createConnection({
 });
 
 connection.connect();
+*/
 
 app.post('/users', function(req, res) {
     let user = req.body;
